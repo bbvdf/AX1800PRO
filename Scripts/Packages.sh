@@ -71,6 +71,10 @@ UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "master"
 #UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main"
 #UPDATE_PACKAGE "easytier" "EasyTier/luci-app-easytier" "main"
 #UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
+UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
+UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
+UPDATE_PACKAGE "kucat" "sirpdboy/luci-theme-kucat" "master"
+UPDATE_PACKAGE "kucat-config" "sirpdboy/luci-app-kucat-config" "master"
 
 #更新软件包版本
 UPDATE_VERSION() {

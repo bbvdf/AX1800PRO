@@ -130,7 +130,7 @@ UPDATE_VERSION() {
 # sed -i 's/+xray-core//' luci-app-passwall2/Makefile
 
 # #删除官方的默认插件
-rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*,adguardhome}
+rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*,attendedsysupgrade}
 rm -rf ../feeds/packages/net/{dae*}
 #rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 

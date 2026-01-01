@@ -71,6 +71,9 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
     fi
 fi
 
-# 在 Settings.sh 的末尾添加
+# 这一行是用来改“购物清单”的，防止编译报错
+sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
+
+# 后面这两行是你已经加过的，保持原样即可
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' .config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> .config

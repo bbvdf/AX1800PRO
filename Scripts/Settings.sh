@@ -70,3 +70,7 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
         echo "qualcommax set up nowifi successfully!"
     fi
 fi
+
+# 在 Settings.sh 的末尾添加
+sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' .config
+echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> .config

@@ -1,5 +1,11 @@
 #!/bin/bash
 
+# #删除官方的默认插件
+rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*,adguardhome}
+rm -rf ../feeds/packages/net/{dae*,adguardhome}
+#rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
+
+
 #安装和更新软件包
 UPDATE_PACKAGE() {
 	local PKG_NAME=$1
@@ -72,7 +78,7 @@ UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "master"
 #UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
-
+UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg" "luci-app-adguardhome"
 
 
 
@@ -128,10 +134,7 @@ UPDATE_VERSION() {
 # #不编译xray-core
 # sed -i 's/+xray-core//' luci-app-passwall2/Makefile
 
-# #删除官方的默认插件
-rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*}
-rm -rf ../feeds/packages/net/{dae*}
-#rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
+
 
 # #更新golang为最新版
 rm -rf ../feeds/packages/lang/golang

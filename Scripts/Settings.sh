@@ -52,11 +52,8 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
     # 路径基于 wrt 根目录
     sed -i 's/PKG_MIRROR_HASH:=.*/PKG_MIRROR_HASH:=skip/g' feeds/nss_packages/firmware/nss-firmware/Makefile
 
-    # 2. 统一 NSS 版本为 12.5，清理之前的脚本冲突 
-    sed -i '/CONFIG_NSS_FIRMWARE_VERSION_11_4/d' .config
-    sed -i '/CONFIG_NSS_FIRMWARE_VERSION_12_1/d' .config
-    sed -i '/CONFIG_NSS_FIRMWARE_VERSION_12_2/d' .config
-    echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> .config
+
+
 
     # 3. 其他原有配置 [cite: 1]
     echo "CONFIG_FEED_nss_packages=n" >> .config

@@ -29,9 +29,6 @@ CFG_FILE="./package/base-files/files/bin/config_generate"
 sed -i "s/192\.168\.[0-9]*\.[0-9]*/$WRT_IP/g" $CFG_FILE
 sed -i "s/hostname='.*'/hostname='$WRT_NAME'/g" $CFG_FILE
 
-# 插件补丁 [cite: 1]
-vlmcsd_patches="./feeds/packages/net/vlmcsd/patches/"
-mkdir -p $vlmcsd_patches && cp -f ../patches/001-fix_compile_with_ccache.patch $vlmcsd_patches
 
 # 写入基础 .config 配置 [cite: 1]
 echo "CONFIG_PACKAGE_luci=y" >> ./.config
@@ -73,17 +70,35 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' .config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> .config
 
-# daed修复
-DAED_MK=$(find ./feeds/ -name "Makefile" -path "*/daed/*")
-if [ -n "$DAED_MK" ]; then
-    echo "修复 daed 依赖: 正在处理 $DAED_MK"
-    # 删除 +v2ray-geoip 和 +v2ray-geosite
-    sed -i 's/+v2ray-geoip//g' "$DAED_MK"
-    sed -i 's/+v2ray-geosite//g' "$DAED_MK"
+
+
+# --- 修复 253: vlmcsd 补丁路径 ---
+vlmcsd_patches="$GITHUB_WORKSPACE/$WRT_DIR/feeds/packages/net/vlmcsd/patches/"
+# 使用绝对路径定位 patches 文件夹
+if [ -f "$GITHUB_WORKSPACE/patches/001-fix_compile_with_ccache.patch" ]; then
+    mkdir -p $vlmcsd_patches
+    cp -f "$GITHUB_WORKSPACE/patches/001-fix_compile_with_ccache.patch" "$vlmcsd_patches"
+    echo "vlmcsd patch applied using absolute path."
 else
-    echo "未找到 daed Makefile，请检查插件名是否正确"
+    echo "Warning: Patch not found at $GITHUB_WORKSPACE/patches/"
 fi
 
-sed -i 's/+v2ray-geoip//g; s/+v2ray-geosite//g' "$DAED_MK"
+# --- 修复 254/255: daed 路径 ---
+# 不再迷信 ./feeds，直接从 wrt 根目录全局搜索
+DAED_MK=$(find "$GITHUB_WORKSPACE/$WRT_DIR" -type f -name "Makefile" -path "*/daed/*" | head -n 1)
 
+if [ -n "$DAED_MK" ]; then
+    echo "Found daed Makefile at: $DAED_MK"
+    sed -i 's/+v2ray-geoip//g' "$DAED_MK"
+    sed -i 's/+v2ray-geosite//g' "$DAED_MK"
+    echo "daed Makefile patched."
+else
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+    echo "警告: 全局搜索也没找到 daed Makefile！"
+    echo "请检查 Packages.sh 是否下载了 daed，或者名字是否叫 luci-app-dae"
+    echo "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"
+fi
 
+# --- 强制清理 .config 防止依赖报错 ---
+sed -i '/CONFIG_PACKAGE_v2ray-geoip/d' .config
+sed -i '/CONFIG_PACKAGE_v2ray-geosite/d' .config

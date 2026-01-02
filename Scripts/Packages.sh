@@ -2,7 +2,7 @@
 
 # #删除官方的默认插件
 rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*,adguardhome}
-rm -rf ../feeds/packages/net/{dae*,adguardhome}
+rm -rf ../feeds/packages/net/{dae*,adguardhome,v2ray-geodata,v2ray-geoip,v2ray-geosite}
 #rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 
 

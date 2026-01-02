@@ -68,9 +68,22 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
     fi
 fi
 
-# 这一行是用来改“购物清单”的，防止编译报错
+# 去掉attendedsysupgrade
 sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
-
-# 后面这两行是你已经加过的，保持原样即可
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' .config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> .config
+
+# daed修复
+DAED_MK=$(find ./feeds/ -name "Makefile" -path "*/daed/*")
+if [ -n "$DAED_MK" ]; then
+    echo "修复 daed 依赖: 正在处理 $DAED_MK"
+    # 删除 +v2ray-geoip 和 +v2ray-geosite
+    sed -i 's/+v2ray-geoip//g' "$DAED_MK"
+    sed -i 's/+v2ray-geosite//g' "$DAED_MK"
+else
+    echo "未找到 daed Makefile，请检查插件名是否正确"
+fi
+
+sed -i 's/+v2ray-geoip//g; s/+v2ray-geosite//g' "$DAED_MK"
+
+

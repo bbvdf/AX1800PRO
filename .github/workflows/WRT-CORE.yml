@@ -243,6 +243,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{env.CI_NAME}}-${{env.WRT_CONFIG}}_${{env.WRT_DATE}}
+          make_latest: true
           files: ./wrt/upload/*.*
           body: |
             京东云亚瑟AX1800pro专属固件包
@@ -266,5 +267,6 @@ jobs:
 
             内核版本：${{env.WRT_KVER}}
             插件列表：${{env.WRT_LIST}}
+
 
 

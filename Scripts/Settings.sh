@@ -42,23 +42,18 @@ if [ -n "$WRT_PACKAGE" ]; then
     echo -e "$WRT_PACKAGE" >> ./.config
 fi
 
-# 高通平台专项调整 [cite: 1, 5]
-DTS_PATH="./target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/"
+# 高通平台专项调整
 if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
-    # 1. 强制跳过 NSS 固件哈希校验 (修复 Error 161) [cite: 2]
-    # 路径基于 wrt 根目录
-    sed -i 's/PKG_MIRROR_HASH:=.*/PKG_MIRROR_HASH:=skip/g' feeds/nss_packages/firmware/nss-firmware/Makefile
+    # 定义高通平台专用设备树路径
+    DTS_PATH="./target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/"
 
-
-
-
-    # 3. 其他原有配置 [cite: 1]
+    # 3. 其他原有配置
     echo "CONFIG_FEED_nss_packages=n" >> .config
     echo "CONFIG_FEED_sqm_scripts_nss=n" >> .config
     echo "CONFIG_PACKAGE_luci-app-sqm=y" >> .config
     echo "CONFIG_PACKAGE_sqm-scripts-nss=y" >> .config
 
-    # 无WIFI配置调整 [cite: 1]
+    # 无WIFI配置调整
     if [[ "${WRT_CONFIG,,}" == *"wifi"* && "${WRT_CONFIG,,}" == *"no"* ]]; then
         find $DTS_PATH -type f ! -iname '*nowifi*' -exec sed -i 's/ipq\(6018\|8074\).dtsi/ipq\1-nowifi.dtsi/g' {} +
         echo "qualcommax set up nowifi successfully!"

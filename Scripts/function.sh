@@ -81,8 +81,8 @@ function set_nss_driver() {
   cat >> $1 <<EOF
 #NSS驱动相关
 CONFIG_NSS_FIRMWARE_VERSION_11_4=n
-# CONFIG_NSS_FIRMWARE_VERSION_12_5 is not set
-CONFIG_NSS_FIRMWARE_VERSION_12_2=y
+CONFIG_NSS_FIRMWARE_VERSION_12_5=y
+CONFIG_NSS_FIRMWARE_VERSION_12_2=n
 CONFIG_PACKAGE_kmod-qca-nss-dp=y
 CONFIG_PACKAGE_kmod-qca-nss-drv=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
@@ -154,7 +154,6 @@ function generate_config() {
   #增加内核选项
   cat_kernel_config "target/linux/qualcommax/${target}/config-default"
 }
-
 
 
 

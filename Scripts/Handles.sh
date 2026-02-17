@@ -24,15 +24,7 @@ PKG_PATH="$GITHUB_WORKSPACE/$WRT_DIR/package/"
 # 	cd $PKG_PATH && echo "homeproxy date has been updated!"
 # fi
 
-#修改qca-nss-drv启动顺序
-NSS_DRV="../feeds/nss_packages/qca-nss-drv/files/qca-nss-drv.init"
-if [ -f "$NSS_DRV" ]; then
-	echo " "
 
-	sed -i 's/START=.*/START=85/g' $NSS_DRV
-
-	cd $PKG_PATH && echo "qca-nss-drv has been fixed!"
-fi
 
 #修改qca-nss-pbuf启动顺序
 NSS_PBUF="./kernel/mac80211/files/qca-nss-pbuf.init"
@@ -53,3 +45,19 @@ if [ -f "$TS_FILE" ]; then
 
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
+
+# 1. 修正 NSS 加载顺序 (ZqinKing 精华)
+sed -i 's/START=30/START=11/g' package/kernel/qca-nss-drv/files/qca-nss-drv.init
+
+# 2. 针对 1G 内存提升 NSS PBUF 性能
+# 将预留缓冲从默认值提升到 2048 (硬改 1G 建议值)
+NSS_DRV_MK="package/kernel/qca-nss-drv/Makefile"
+if [ -f "$NSS_DRV_MK" ]; then
+    # 移除可能存在的旧定义并添加新定义
+    sed -i '/DNSS_DRV_FREE_RESERVE_PBUF_COUNT/d' "$NSS_DRV_MK"
+    sed -i '/PKG_RELEASE:=/a\\nEXTRA_CFLAGS += -DNSS_DRV_FREE_RESERVE_PBUF_COUNT=2048' "$NSS_DRV_MK"
+    echo "NSS PBUF for 1GB RAM optimized."
+fi
+
+# 3. 强制开启 nss-ifb
+echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y" >> .config

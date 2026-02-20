@@ -46,16 +46,20 @@ if [ -f "$TS_FILE" ]; then
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
 
-# 1. 修正 NSS 加载顺序 - 去掉前面的 package/ 路径，因为当前就在 package 目录下
-sed -i 's/START=30/START=11/g' kernel/qca-nss-drv/files/qca-nss-drv.init
+# 修改 Handles.sh 中的第一项修正
+# 尝试使用 find 自动定位文件，避免路径硬编码错误
+NSS_DRV_INIT=$(find . -maxdepth 4 -name "qca-nss-drv.init")
+if [ -f "$NSS_DRV_INIT" ]; then
+    sed -i 's/START=30/START=11/g' "$NSS_DRV_INIT"
+    echo "NSS drv fixed at $NSS_DRV_INIT"
+fi
 
-# 2. 针对 1G 内存提升 NSS PBUF 性能
-NSS_DRV_MK="kernel/qca-nss-drv/Makefile"
+# 修改第二项：NSS PBUF 性能优化
+NSS_DRV_MK=$(find . -maxdepth 4 -name "Makefile" | grep "qca-nss-drv/Makefile")
 if [ -f "$NSS_DRV_MK" ]; then
-    # 移除可能存在的旧定义并添加新定义
     sed -i '/DNSS_DRV_FREE_RESERVE_PBUF_COUNT/d' "$NSS_DRV_MK"
     sed -i '/PKG_RELEASE:=/a\\nEXTRA_CFLAGS += -DNSS_DRV_FREE_RESERVE_PBUF_COUNT=2048' "$NSS_DRV_MK"
-    echo "NSS PBUF for 1GB RAM optimized."
+    echo "NSS PBUF optimized at $NSS_DRV_MK"
 fi
 
 # 3. 强制开启 nss-ifb

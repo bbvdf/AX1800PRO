@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # #删除官方的默认插件
-rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*,adguardhome}
+rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*}
 rm -rf ../feeds/packages/net/{dae*}
 #rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 

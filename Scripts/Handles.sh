@@ -62,5 +62,13 @@ if [ -f "$NSS_DRV_MK" ]; then
     echo "NSS PBUF optimized at $NSS_DRV_MK"
 fi
 
-# 3. 强制开启 nss-ifb
+# 强制开启 nss-ifb
 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y" >> .config
+
+# 修正 无luci-app-adguardhome子目录 Makefile
+AGH_MK=$(find . -maxdepth 2 -type f -name Makefile -path "*luci-app-adguardhome*")
+
+if [ -n "$AGH_MK" ]; then
+    sed -i 's|include $(INCLUDE_DIR)/package.mk|include ../../luci.mk|g' "$AGH_MK"
+    sed -i 's|SUBMENU:=.*|SUBMENU:=Applications|g' "$AGH_MK"
+fi

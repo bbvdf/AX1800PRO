@@ -7,6 +7,15 @@ rm -rf ../feeds/packages/net/{dae*}
 
 
 #安装和更新软件包
+这是一个集成了清理、自动重试（3次）、错误检查和强制终止功能的完整脚本。
+
+我为你优化了逻辑：如果 git clone 失败，它会等待 3 秒后重试；如果重试 3 次依然失败，脚本将立即停止执行并报错。
+
+优化后的完整脚本
+Bash
+#!/bin/bash
+
+# --- 更新和安装软件包的增强函数 ---
 UPDATE_PACKAGE() {
     local PKG_NAME=$1
     local PKG_REPO=$2
@@ -15,42 +24,51 @@ UPDATE_PACKAGE() {
     local PKG_LIST=("$PKG_NAME" $5)
     local REPO_NAME=${PKG_REPO#*/}
 
-    echo " "
-    echo "Processing: $PKG_NAME from $PKG_REPO ($PKG_BRANCH)"
+    echo -e "\n\033[32m[Processing]\033[0m $PKG_NAME from $PKG_REPO ($PKG_BRANCH)"
 
-    # --- 第一步：清理旧目录 ---
+    # 1. 删除本地可能存在的旧软件包 (防止冲突)
     for NAME in "${PKG_LIST[@]}"; do
         local FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
         if [ -n "$FOUND_DIRS" ]; then
             while read -r DIR; do
                 rm -rf "$DIR"
-                echo "Successfully removed old directory: $DIR"
+                echo "Successfully removed: $DIR"
             done <<< "$FOUND_DIRS"
         fi
     done
 
-    # --- 第二步：克隆并检查结果 ---
-    echo "Cloning $PKG_REPO ..."
-    if git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/$PKG_REPO.git"; then
-        echo "Successfully cloned $PKG_NAME."
-    else
-        echo "--------------------------------------------------------"
-        echo "ERROR: Failed to clone $PKG_NAME from $PKG_REPO"
-        echo "Check your network connection or repository URL."
-        echo "--------------------------------------------------------"
-        exit 1  # 核心改动：克隆失败立即终止脚本
+    # 2. 克隆 GitHub 仓库 (带 3 次重试机制)
+    local retry=0
+    local success=1
+    while [ $retry -lt 3 ]; do
+        echo "Cloning $PKG_REPO (Attempt: $((retry+1))/3)..."
+        if git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/$PKG_REPO.git"; then
+            success=0
+            break
+        fi
+        retry=$((retry+1))
+        echo -e "\033[33m[Warning]\033[0m Clone failed, retrying in 3s..."
+        sleep 3
+    done
+
+    # 3. 检查最终克隆结果
+    if [ $success -ne 0 ]; then
+        echo -e "\033[31m[ERROR]\033[0m Failed to clone $PKG_NAME after 3 attempts. Terminating script."
+        exit 1 # 彻底终止脚本，防止编译出问题的固件
     fi
 
-    # --- 第三步：后续处理逻辑 ---
+    # 4. 处理克隆后的目录逻辑
     if [[ $PKG_SPECIAL == "pkg" ]]; then
-        # 这里的 find 也加个简单的容错
-        if ls ./$REPO_NAME/*/ >/dev/null 2>&1; then
+        # 检查下载的内容是否存在
+        if [ -d "./$REPO_NAME" ]; then
             find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
             rm -rf "./$REPO_NAME/"
         fi
     elif [[ $PKG_SPECIAL == "name" ]]; then
         mv -f "$REPO_NAME" "$PKG_NAME"
     fi
+    
+    echo -e "\033[32m[Success]\033[0m $PKG_NAME is ready."
 }
 
 # 调用示例

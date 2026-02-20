@@ -74,8 +74,8 @@ UPDATE_PACKAGE() {
 UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "master"
 UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
-UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg" "luci-app-adguardhome"
-#UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
+#UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg" "luci-app-adguardhome"
+UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 
 #更新软件包版本

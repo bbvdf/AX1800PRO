@@ -46,12 +46,11 @@ if [ -f "$TS_FILE" ]; then
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
 
-# 1. 修正 NSS 加载顺序 (ZqinKing 精华)
-sed -i 's/START=30/START=11/g' package/kernel/qca-nss-drv/files/qca-nss-drv.init
+# 1. 修正 NSS 加载顺序 - 去掉前面的 package/ 路径，因为当前就在 package 目录下
+sed -i 's/START=30/START=11/g' kernel/qca-nss-drv/files/qca-nss-drv.init
 
 # 2. 针对 1G 内存提升 NSS PBUF 性能
-# 将预留缓冲从默认值提升到 2048 (硬改 1G 建议值)
-NSS_DRV_MK="package/kernel/qca-nss-drv/Makefile"
+NSS_DRV_MK="kernel/qca-nss-drv/Makefile"
 if [ -f "$NSS_DRV_MK" ]; then
     # 移除可能存在的旧定义并添加新定义
     sed -i '/DNSS_DRV_FREE_RESERVE_PBUF_COUNT/d' "$NSS_DRV_MK"

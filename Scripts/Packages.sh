@@ -94,7 +94,7 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 
 # adguardhome包
 
-UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg"
+#UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/small-package" "main" "pkg"
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"

@@ -152,8 +152,9 @@ UPDATE_VERSION() {
 
 
 # #更新golang为最新版
-#rm -rf ../feeds/packages/lang/golang
+rm -rf ../feeds/packages/lang/golang
 #git clone -b 24.x https://github.com/sbwml/packages_lang_golang ../feeds/packages/lang/golang
+git clone https://github.com/kenzok8/golang -b 1.26 ..feeds/packages/lang/golang
 
 
 #cp -r $GITHUB_WORKSPACE/package/* ./

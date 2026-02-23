@@ -70,7 +70,11 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
 	fi
 fi
 
+# 强制开启 APK 未签名支持
+sed -i '/CONFIG_APK_ALLOW_UNSIGNED/d' ./.config
+echo "CONFIG_APK_ALLOW_UNSIGNED=y" >> ./.config
+
 # 去掉attendedsysupgrade
 sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
-sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' .config
-echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> .config
+sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
+echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config

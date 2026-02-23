@@ -65,30 +65,3 @@ fi
 # 强制开启 nss-ifb
 echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y" >> .config
 
-# # ===== 修正 luci-app-adguardhome 兼容 24.x =====
-# AGH_DIR="./luci-app-adguardhome"
-# AGH_MK="$AGH_DIR/Makefile"
-
-# if [ -f "$AGH_MK" ]; then
-#     echo "Patching luci-app-adguardhome Makefile..."
-
-#     # 1️⃣ 构建系统从 package.mk 改为 luci.mk
-#     if grep -q 'include $(INCLUDE_DIR)/package.mk' "$AGH_MK"; then
-#         sed -i 's|include $(INCLUDE_DIR)/package.mk|include ../../luci.mk|g' "$AGH_MK"
-#         echo " - Switched to luci.mk"
-#     fi
-
-#     # 2️⃣ 修正 SUBMENU（防止 defconfig 清洗）
-#     if grep -q 'SUBMENU:=' "$AGH_MK"; then
-#         sed -i 's|SUBMENU:=.*|SUBMENU:=Applications|g' "$AGH_MK"
-#         echo " - Fixed SUBMENU"
-#     fi
-
-#     # 3️⃣ 可选：强依赖官方 adguardhome（防止被清）
-#     if ! grep -q '+adguardhome' "$AGH_MK"; then
-#         sed -i 's|DEPENDS:=|DEPENDS:=+adguardhome |g' "$AGH_MK"
-#         echo " - Added dependency: +adguardhome"
-#     fi
-
-#     echo "luci-app-adguardhome patch complete."
-# fi

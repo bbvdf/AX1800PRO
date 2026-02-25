@@ -44,6 +44,17 @@ if [ -f "$NSS_PBUF" ]; then
 	cd $PKG_PATH && echo "qca-nss-pbuf has been fixed!"
 fi
 
+# 修改第二项：NSS PBUF 性能优化
+NSS_DRV_MK=$(find . -maxdepth 4 -name "Makefile" | grep "qca-nss-drv/Makefile")
+if [ -f "$NSS_DRV_MK" ]; then
+    sed -i '/DNSS_DRV_FREE_RESERVE_PBUF_COUNT/d' "$NSS_DRV_MK"
+    sed -i '/PKG_RELEASE:=/a\\nEXTRA_CFLAGS += -DNSS_DRV_FREE_RESERVE_PBUF_COUNT=2048' "$NSS_DRV_MK"
+    echo "NSS PBUF optimized at $NSS_DRV_MK"
+fi
+
+# 强制开启 nss-ifb
+echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y" >> .config
+
 #修复TailScale配置文件冲突
 TS_FILE=$(find ../feeds/packages/ -maxdepth 3 -type f -wholename "*/tailscale/Makefile")
 if [ -f "$TS_FILE" ]; then
@@ -53,3 +64,5 @@ if [ -f "$TS_FILE" ]; then
 
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
+
+

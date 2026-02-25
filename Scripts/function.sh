@@ -137,9 +137,9 @@ function generate_config() {
   local target=$(echo $WRT_ARCH | cut -d'_' -f2)
 
   #删除wifi依赖
-  if [[ "$WRT_CONFIG" == *"NOWIFI"* ]]; then
-    remove_wifi $target
-  fi
+  # if [[ "$WRT_CONFIG" == *"NOWIFI"* ]]; then
+  #   remove_wifi $target
+  # fi
 
   #ipk仓库
   if [[ "${GITHUB_REPOSITORY,,}" == *"openwrt-ci-ipk"* ]]; then

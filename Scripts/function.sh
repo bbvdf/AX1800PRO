@@ -81,8 +81,8 @@ function set_nss_driver() {
   cat >> $1 <<EOF
 #NSS驱动相关
 CONFIG_NSS_FIRMWARE_VERSION_11_4=n
-# CONFIG_NSS_FIRMWARE_VERSION_12_5 is not set
-CONFIG_NSS_FIRMWARE_VERSION_12_2=y
+# CONFIG_NSS_FIRMWARE_VERSION_12_5=y
+CONFIG_NSS_FIRMWARE_VERSION_12_2=n
 CONFIG_PACKAGE_kmod-qca-nss-dp=y
 CONFIG_PACKAGE_kmod-qca-nss-drv=y
 CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
@@ -101,17 +101,17 @@ EOF
 function kernel_version() {
   echo $(sed -n 's/^KERNEL_PATCHVER:=\(.*\)/\1/p' target/linux/qualcommax/Makefile)
 }
-function remove_wifi() {
-  local target=$1
-  #去除依赖
-  sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/Makefile
-  sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/${target}/target.mk
-  sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/image/${target}.mk
-  sed -i 's/\(ath10k-firmware-[^ ]*\|kmod-ath10k [^ ]*\|kmod-ath10k-[^ ]*\)//g' ./target/linux/qualcommax/image/${target}.mk
-  #删除无线组件
-  rm -rf package/network/services/hostapd
-  rm -rf package/firmware/ipq-wifi
-}
+# function remove_wifi() {
+#   local target=$1
+#   #去除依赖
+#   sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/Makefile
+#   sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/${target}/target.mk
+#   sed -i 's/\(ath11k-firmware-[^ ]*\|ipq-wifi-[^ ]*\|kmod-ath11k-[^ ]*\)//g' ./target/linux/qualcommax/image/${target}.mk
+#   sed -i 's/\(ath10k-firmware-[^ ]*\|kmod-ath10k [^ ]*\|kmod-ath10k-[^ ]*\)//g' ./target/linux/qualcommax/image/${target}.mk
+#   #删除无线组件
+#   rm -rf package/network/services/hostapd
+#   rm -rf package/firmware/ipq-wifi
+# }
 
 function set_kernel_size() {
   #修改jdc ax1800 pro 的内核大小为12M

@@ -24,27 +24,11 @@ CONFIG_KERNEL_PERF_EVENTS=y
 #NSS配置
 CONFIG_FEED_nss_packages=n
 CONFIG_FEED_sqm_scripts_nss=n
+CONFIG_IPQ_MEM_PROFILE_1024=n
+CONFIG_IPQ_MEM_PROFILE_512=y
+CONFIG_ATH11K_MEM_PROFILE_1G=n
+CONFIG_ATH11K_MEM_PROFILE_512M=y
+
 CONFIG_PACKAGE_sqm-scripts-nss=y
+
 CONFIG_PACKAGE_kmod-qca-nss-crypto=y
-
-# --- 硬改 1G 专用 NSS & 内存配置 ---
-CONFIG_IPQ_MEM_PROFILE_1024=y
-CONFIG_ATH11K_MEM_PROFILE_1G=y
-CONFIG_NSS_MEM_PROFILE_HIGH=y
-
-# --- 补全缺失的 NSS 核心组件 (含 IFB) ---
-CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-vlan-mgr=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe=y
-CONFIG_PACKAGE_kmod-qca-mcs=y
-
-# --- 硬件加速补丁 ---
-CONFIG_KERNEL_SKB_RECYCLER=y
-CONFIG_KERNEL_SKB_RECYCLER_MULTI_CPU=y
-CONFIG_PACKAGE_sqm-scripts-nss=y
-
-# --- Wi-Fi & Mesh 满血版 ---
-CONFIG_NSS_DRV_WIFI_MESH_ENABLE=y
-CONFIG_ATH11K_NSS_MESH_SUPPORT=y
-CONFIG_PACKAGE_kmod-qca-nss-drv-wifi-meshmgr=y

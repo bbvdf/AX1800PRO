@@ -24,7 +24,15 @@ PKG_PATH="$GITHUB_WORKSPACE/$WRT_DIR/package/"
 # 	cd $PKG_PATH && echo "homeproxy date has been updated!"
 # fi
 
+#修改qca-nss-drv启动顺序
+NSS_DRV="../feeds/nss_packages/qca-nss-drv/files/qca-nss-drv.init"
+if [ -f "$NSS_DRV" ]; then
+	echo " "
 
+	sed -i 's/START=.*/START=85/g' $NSS_DRV
+
+	cd $PKG_PATH && echo "qca-nss-drv has been fixed!"
+fi
 
 #修改qca-nss-pbuf启动顺序
 NSS_PBUF="./kernel/mac80211/files/qca-nss-pbuf.init"
@@ -45,23 +53,3 @@ if [ -f "$TS_FILE" ]; then
 
 	cd $PKG_PATH && echo "tailscale has been fixed!"
 fi
-
-# 修改 Handles.sh 中的第一项修正
-# 尝试使用 find 自动定位文件，避免路径硬编码错误
-NSS_DRV_INIT=$(find . -maxdepth 4 -name "qca-nss-drv.init")
-if [ -f "$NSS_DRV_INIT" ]; then
-    sed -i 's/START=30/START=11/g' "$NSS_DRV_INIT"
-    echo "NSS drv fixed at $NSS_DRV_INIT"
-fi
-
-# 修改第二项：NSS PBUF 性能优化
-NSS_DRV_MK=$(find . -maxdepth 4 -name "Makefile" | grep "qca-nss-drv/Makefile")
-if [ -f "$NSS_DRV_MK" ]; then
-    sed -i '/DNSS_DRV_FREE_RESERVE_PBUF_COUNT/d' "$NSS_DRV_MK"
-    sed -i '/PKG_RELEASE:=/a\\nEXTRA_CFLAGS += -DNSS_DRV_FREE_RESERVE_PBUF_COUNT=2048' "$NSS_DRV_MK"
-    echo "NSS PBUF optimized at $NSS_DRV_MK"
-fi
-
-# 强制开启 nss-ifb
-echo "CONFIG_PACKAGE_kmod-qca-nss-drv-ifb=y" >> .config
-

@@ -1,66 +1,43 @@
 #!/bin/bash
 
-# #删除官方的默认插件
-rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*}
-rm -rf ../feeds/packages/net/{dae*}
-#rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
-
-
 #安装和更新软件包
-#这是一个集成了清理、自动重试（3次）、错误检查和强制终止功能的完整脚本。
 UPDATE_PACKAGE() {
-    local PKG_NAME=$1
-    local PKG_REPO=$2
-    local PKG_BRANCH=$3
-    local PKG_SPECIAL=$4
-    local PKG_LIST=("$PKG_NAME" $5)
-    local REPO_NAME=${PKG_REPO#*/}
+	local PKG_NAME=$1
+	local PKG_REPO=$2
+	local PKG_BRANCH=$3
+	local PKG_SPECIAL=$4
+	local PKG_LIST=("$PKG_NAME" $5)  # 第5个参数为自定义名称列表
+	local REPO_NAME=${PKG_REPO#*/}
 
-    echo -e "\n\033[32m[Processing]\033[0m $PKG_NAME from $PKG_REPO ($PKG_BRANCH)"
+	echo " "
 
-    # 1. 删除本地可能存在的旧软件包 (防止冲突)
-    for NAME in "${PKG_LIST[@]}"; do
-        local FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
-        if [ -n "$FOUND_DIRS" ]; then
-            while read -r DIR; do
-                rm -rf "$DIR"
-                echo "Successfully removed: $DIR"
-            done <<< "$FOUND_DIRS"
-        fi
-    done
+	# 删除本地可能存在的不同名称的软件包
+	for NAME in "${PKG_LIST[@]}"; do
+		# 查找匹配的目录
+		echo "Search directory: $NAME"
+		local FOUND_DIRS=$(find ../feeds/luci/ ../feeds/packages/ -maxdepth 3 -type d -iname "*$NAME*" 2>/dev/null)
 
-    # 2. 克隆 GitHub 仓库 (带 3 次重试机制)
-    local retry=0
-    local success=1
-    while [ $retry -lt 3 ]; do
-        echo "Cloning $PKG_REPO (Attempt: $((retry+1))/3)..."
-        if git clone --depth=1 --single-branch --branch "$PKG_BRANCH" "https://github.com/$PKG_REPO.git"; then
-            success=0
-            break
-        fi
-        retry=$((retry+1))
-        echo -e "\033[33m[Warning]\033[0m Clone failed, retrying in 3s..."
-        sleep 3
-    done
+		# 删除找到的目录
+		if [ -n "$FOUND_DIRS" ]; then
+			while read -r DIR; do
+				rm -rf "$DIR"
+				echo "Delete directory: $DIR"
+			done <<< "$FOUND_DIRS"
+		else
+			echo "Not fonud directory: $NAME"
+		fi
+	done
 
-    # 3. 检查最终克隆结果
-    if [ $success -ne 0 ]; then
-        echo -e "\033[31m[ERROR]\033[0m Failed to clone $PKG_NAME after 3 attempts. Terminating script."
-        exit 1 # 彻底终止脚本，防止编译出问题的固件
-    fi
+	# 克隆 GitHub 仓库
+	git clone --depth=1 --single-branch --branch $PKG_BRANCH "https://github.com/$PKG_REPO.git"
 
-    # 4. 处理克隆后的目录逻辑
-    if [[ $PKG_SPECIAL == "pkg" ]]; then
-        # 检查下载的内容是否存在
-        if [ -d "./$REPO_NAME" ]; then
-            find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
-            rm -rf "./$REPO_NAME/"
-        fi
-    elif [[ $PKG_SPECIAL == "name" ]]; then
-        mv -f "$REPO_NAME" "$PKG_NAME"
-    fi
-    
-    echo -e "\033[32m[Success]\033[0m $PKG_NAME is ready."
+	# 处理克隆的仓库
+	if [[ $PKG_SPECIAL == "pkg" ]]; then
+		find ./$REPO_NAME/*/ -maxdepth 3 -type d -iname "*$PKG_NAME*" -prune -exec cp -rf {} ./ \;
+		rm -rf ./$REPO_NAME/
+	elif [[ $PKG_SPECIAL == "name" ]]; then
+		mv -f $REPO_NAME $PKG_NAME
+	fi
 }
 
 # 调用示例
@@ -87,21 +64,13 @@ UPDATE_PACKAGE() {
 # UPDATE_PACKAGE "qmodem" "FUjr/QModem" "main"
 # UPDATE_PACKAGE "viking" "VIKINGYFY/packages" "main" "" "luci-app-timewol luci-app-wolplus"
 # UPDATE_PACKAGE "vnt" "lmq8267/luci-app-vnt" "main"
-#UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
+UPDATE_PACKAGE "luci-app-tailscale" "asvow/luci-app-tailscale" "main"
 UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "master"
-UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
-UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
-
-# adguardhome包
-
-#UPDATE_PACKAGE "adguardhome" "kenzok8/small-package" "main" "pkg"
-#UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/small-package" "main" "pkg"
-
-#UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
-UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
-#UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"
-#UPDATE_PACKAGE "luci-app-adguardhome" "ThingsWhy/luci-app-adguardhome" "main"
-
+UPDATE_PACKAGE "luci-app-dae" "QiuSimons/luci-app-dae" "next"
+UPDATE_PACKAGE "luci-app-pushbot" "zzsj0928/luci-app-pushbot" "master"
+UPDATE_PACKAGE "luci-app-easytier" "EasyTier/luci-app-easytier" "main"
+UPDATE_PACKAGE "easytier" "EasyTier/luci-app-easytier" "main"
+#UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 
 #更新软件包版本
 UPDATE_VERSION() {
@@ -153,11 +122,14 @@ UPDATE_VERSION() {
 # #不编译xray-core
 # sed -i 's/+xray-core//' luci-app-passwall2/Makefile
 
+# #删除官方的默认插件
+rm -rf ../feeds/luci/applications/luci-app-{passwall*,mosdns,dockerman,dae*,bypass*}
+rm -rf ../feeds/packages/net/{dae*}
+#rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 
 # #更新golang为最新版
-rm -rf ../feeds/packages/lang/golang
+#rm -rf ../feeds/packages/lang/golang
 #git clone -b 24.x https://github.com/sbwml/packages_lang_golang ../feeds/packages/lang/golang
-git clone -b 1.26 https://github.com/kenzok8/golang ../feeds/packages/lang/golang
 
 
 #cp -r $GITHUB_WORKSPACE/package/* ./

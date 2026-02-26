@@ -75,8 +75,24 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
+# 无线数据修复
 # --- 强制注入内核分区支持配置 ---
 echo "CONFIG_PARTITION_ADVANCED=y" >> .config
 echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
+# 定位该脚本
+CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata")
+
+if [ -f "$CAL_DATA_FILE" ]; then
+    echo "正在对 11-ath11k-caldata 进行京东云专项适配..."
+
+    # 1. 关键修改：将针对京东云的提取源 0:ART 替换为物理分区 mmcblk0p15
+    # 并且把输出文件名改为驱动期待的 Variant 后缀
+    sed -i '/jdcloud,re-ss-01/,/;;/ {
+        s/"0:ART"/"\/dev\/mmcblk0p15"/
+        s/wifi.bin/wifi.JDC-RE-SS-01/
+    }' "$CAL_DATA_FILE"
+
+    echo "适配完成！提取路径已指向 mmcblk0p15，且文件名已匹配 JDC-RE-SS-01"
+fi

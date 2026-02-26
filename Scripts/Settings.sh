@@ -83,29 +83,20 @@ echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
 
 # 2. 修改热插拔脚本 (钥匙)
-# 我们需要把 0:ART 换成物理路径，同时把后缀从 .bin 换成 .JDC-RE-SS-01
+# 定位文件
 CAL_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
-if [ -f "$CAL_FILE" ]; then
-    echo "[Settings] 正在为京东云 RE-SS-01 定制无线脚本..."
-    
-    # 替换提取源：0:ART -> /dev/mmcblk0p15
-    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_FILE"
-    
-    # 替换输出文件名后缀：.bin -> .JDC-RE-SS-01
-    # 这样生成的物理文件就叫 cal-ahb-c000000.wifi.JDC-RE-SS-01
-    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE"
-    
-    # 验证修改结果
-    echo "--- 脚本修改结果确认 ---"
-    grep -E "mmcblk0p15|JDC-RE-SS-01" "$CAL_FILE"
-fi
 
-# 3. 强制对齐 DTS (保险)
-# 确保源码里的 DTS 定义和我们生成的后缀一字不差
-RE_DTS=$(find target/linux/qualcommax -name "ipq6000-re-ss-01.dts")
-if [ -f "$RE_DTS" ]; then
-    # 删掉旧的，插入新的，确保 variant 字符串为 JDC-RE-SS-01
-    sed -i '/qcom,ath11k-calibration-variant/d' "$RE_DTS"
-    sed -i '/soc {/i \	qcom,ath11k-calibration-variant = "JDC-RE-SS-01";' "$RE_DTS"
-    echo "[Settings] DTS Variant 已强制对齐为 JDC-RE-SS-01"
+if [ -f "$CAL_FILE" ]; then
+    echo "[Settings] 开始精准修正京东云亚瑟无线脚本..."
+
+    # 1. 修正 IPQ6018 的提取路径 (针对京东云区块)
+    # 使用起始行和结束行匹配，只改 jdcloud 相关的部分
+    sed -i '/jdcloud,re-ss-01/,/;;/ s@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@' "$CAL_FILE"
+    
+    # 2. 修正文件名后缀 (确保路径是 IPQ6018)
+    sed -i '/jdcloud,re-ss-01/,/;;/ s@wifi.bin@wifi.JDC-RE-SS-01@' "$CAL_FILE"
+
+    # 3. 验证确认 (这行非常重要，请在下次编译日志里检查输出)
+    echo "--- 修正结果最终确认 ---"
+    sed -n '/jdcloud,re-ss-01/,/;;/p' "$CAL_FILE"
 fi

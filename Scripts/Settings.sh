@@ -76,21 +76,36 @@ sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 # 无线数据修复
-# --- 1. 注入内核配置 (模仿你成功的代码) ---
-sed -i '/CONFIG_MMC_BLOCK/d' .config
-echo "CONFIG_MMC_BLOCK=y" >> .config
+# 1. 注入内核分区识别 (地基)
 echo "CONFIG_PARTITION_ADVANCED=y" >> .config
+echo "CONFIG_MMC_BLOCK=y" >> .config
+echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
 
-# --- 2. 修改提取脚本 ---
-CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
-if [ -f "$CAL_DATA_FILE" ]; then
-    # 执行替换
-    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_DATA_FILE"
-    sed -i 's@cal-ahb-c000000.wifi.bin@cal-ahb-c000000.wifi.JDC-RE-SS-01@g' "$CAL_DATA_FILE"
+# 2. 修改热插拔脚本 (钥匙)
+# 我们需要把 0:ART 换成物理路径，同时把后缀从 .bin 换成 .JDC-RE-SS-01
+CAL_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
+if [ -f "$CAL_FILE" ]; then
+    echo "[Settings] 正在为京东云 RE-SS-01 定制无线脚本..."
     
-    # 【最关键的一步】打印出来！
-    echo "========= 验证无线修复脚本修改是否成功 ========="
-    grep -E "mmcblk0p15|JDC-RE-SS-01" "$CAL_DATA_FILE"
-    echo "==============================================="
+    # 替换提取源：0:ART -> /dev/mmcblk0p15
+    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_FILE"
+    
+    # 替换输出文件名后缀：.bin -> .JDC-RE-SS-01
+    # 这样生成的物理文件就叫 cal-ahb-c000000.wifi.JDC-RE-SS-01
+    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE"
+    
+    # 验证修改结果
+    echo "--- 脚本修改结果确认 ---"
+    grep -E "mmcblk0p15|JDC-RE-SS-01" "$CAL_FILE"
+fi
+
+# 3. 强制对齐 DTS (保险)
+# 确保源码里的 DTS 定义和我们生成的后缀一字不差
+RE_DTS=$(find target/linux/qualcommax -name "ipq6000-re-ss-01.dts")
+if [ -f "$RE_DTS" ]; then
+    # 删掉旧的，插入新的，确保 variant 字符串为 JDC-RE-SS-01
+    sed -i '/qcom,ath11k-calibration-variant/d' "$RE_DTS"
+    sed -i '/soc {/i \	qcom,ath11k-calibration-variant = "JDC-RE-SS-01";' "$RE_DTS"
+    echo "[Settings] DTS Variant 已强制对齐为 JDC-RE-SS-01"
 fi

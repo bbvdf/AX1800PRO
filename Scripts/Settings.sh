@@ -70,10 +70,13 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
 	fi
 fi
 
-
-
-
 # 去掉attendedsysupgrade
 sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
+
+# --- 强制注入内核分区支持配置 ---
+echo "CONFIG_PARTITION_ADVANCED=y" >> .config
+echo "CONFIG_MMC_BLOCK=y" >> .config
+echo "CONFIG_PARTLABEL=y" >> .config
+echo "CONFIG_EFI_PARTITION=y" >> .config

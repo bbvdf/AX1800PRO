@@ -81,22 +81,22 @@ echo "CONFIG_PARTITION_ADVANCED=y" >> .config
 echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
-# 定位 caldata 脚本
+# 1. 定位文件
 CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
 
-if [ ! -f "$CAL_DATA_FILE" ]; then
-    echo "[ERROR] 找不到 11-ath11k-caldata 文件！"
-    exit 1
+if [ -f "$CAL_DATA_FILE" ]; then
+    echo "[INFO] 发现目标文件，开始强制修正..."
+
+    # 2. 修正提取路径：把针对 mmc 提取的所有 "0:ART" 替换为物理路径 "/dev/mmcblk0p15"
+    # 我们改用 @ 作为 sed 定界符，防止路径里的 / 产生干扰
+    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_DATA_FILE"
+
+    # 3. 修正输出文件名后缀 (重要：匹配你 DTS 里的 JDC-RE-SS-01)
+    # 这一行会将顶部的 case 匹配模式也改掉，确保驱动请求 JDC 文件时，脚本能接单
+    sed -i 's@cal-ahb-c000000.wifi.bin@cal-ahb-c000000.wifi.JDC-RE-SS-01@g' "$CAL_DATA_FILE"
+
+    echo "[SUCCESS] 修改后的关键行预览："
+    grep "mmcblk0p15" "$CAL_DATA_FILE"
+else
+    echo "[ERROR] 未能定位到 11-ath11k-caldata！"
 fi
-
-echo "[INFO] 修复 JDCloud RE-SS-01 caldata 脚本: $CAL_DATA_FILE"
-
-# 修改 RE-SS-01 逻辑：
-# 1. 指向 eMMC 分区 /dev/mmcblk0p15
-# 2. 保持输出文件名为 cal-ahb-c000000.wifi.bin
-# 3. 不影响其他设备
-sed -i '/jdcloud,re-ss-01/,/;;/ {
-    s#caldata_extract_mmc "0:ART"#caldata_extract_mmc "/dev/mmcblk0p15"#
-}' "$CAL_DATA_FILE"
-
-echo "[INFO] 修复完成，RE-SS-01 将使用 /dev/mmcblk0p15 自动生成 cal-ahb-c000000.wifi.bin"

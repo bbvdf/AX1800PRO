@@ -81,18 +81,22 @@ echo "CONFIG_PARTITION_ADVANCED=y" >> .config
 echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
-# 定位该脚本
-CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata")
+# 定位 caldata 脚本
+CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
 
-if [ -f "$CAL_DATA_FILE" ]; then
-    echo "正在对 11-ath11k-caldata 进行京东云专项适配..."
-
-    # 1. 关键修改：将针对京东云的提取源 0:ART 替换为物理分区 mmcblk0p15
-    # 并且把输出文件名改为驱动期待的 Variant 后缀
-    sed -i '/jdcloud,re-ss-01/,/;;/ {
-        s/"0:ART"/"\/dev\/mmcblk0p15"/
-        s/wifi.bin/wifi.JDC-RE-SS-01/
-    }' "$CAL_DATA_FILE"
-
-    echo "适配完成！提取路径已指向 mmcblk0p15，且文件名已匹配 JDC-RE-SS-01"
+if [ ! -f "$CAL_DATA_FILE" ]; then
+    echo "[ERROR] 找不到 11-ath11k-caldata 文件！"
+    exit 1
 fi
+
+echo "[INFO] 修复 JDCloud RE-SS-01 caldata 脚本: $CAL_DATA_FILE"
+
+# 修改 RE-SS-01 逻辑：
+# 1. 指向 eMMC 分区 /dev/mmcblk0p15
+# 2. 保持输出文件名为 cal-ahb-c000000.wifi.bin
+# 3. 不影响其他设备
+sed -i '/jdcloud,re-ss-01/,/;;/ {
+    s#caldata_extract_mmc "0:ART"#caldata_extract_mmc "/dev/mmcblk0p15"#
+}' "$CAL_DATA_FILE"
+
+echo "[INFO] 修复完成，RE-SS-01 将使用 /dev/mmcblk0p15 自动生成 cal-ahb-c000000.wifi.bin"

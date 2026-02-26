@@ -91,11 +91,14 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
         echo "错误: 无法在源码中找到 ipq6000-re-ss-01.dts，请检查 Commit 路径变动！"
     fi
 
-    # 2. 原有的 NSS 和插件配置
+    # 2. NSS 和插件配置
+	#取消nss相关feed
     echo "CONFIG_FEED_nss_packages=n" >> ./.config
     echo "CONFIG_FEED_sqm_scripts_nss=n" >> ./.config
+	#设置NSS版本
     echo "CONFIG_NSS_FIRMWARE_VERSION_11_4=n" >> ./.config
     echo "CONFIG_NSS_FIRMWARE_VERSION_12_5=y" >> ./.config
+	#开启sqm-nss插件
     echo "CONFIG_PACKAGE_luci-app-sqm=y" >> ./.config
     echo "CONFIG_PACKAGE_sqm-scripts-nss=y" >> ./.config
 

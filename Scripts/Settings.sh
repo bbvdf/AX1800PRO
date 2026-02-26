@@ -76,27 +76,21 @@ sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 # 无线数据修复
-# --- 强制注入内核分区支持配置 ---
-echo "CONFIG_PARTITION_ADVANCED=y" >> .config
+# --- 1. 注入内核配置 (模仿你成功的代码) ---
+sed -i '/CONFIG_MMC_BLOCK/d' .config
 echo "CONFIG_MMC_BLOCK=y" >> .config
-echo "CONFIG_PARTLABEL=y" >> .config
+echo "CONFIG_PARTITION_ADVANCED=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
-# 1. 定位文件
+
+# --- 2. 修改提取脚本 ---
 CAL_DATA_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
-
 if [ -f "$CAL_DATA_FILE" ]; then
-    echo "[INFO] 发现目标文件，开始强制修正..."
-
-    # 2. 修正提取路径：把针对 mmc 提取的所有 "0:ART" 替换为物理路径 "/dev/mmcblk0p15"
-    # 我们改用 @ 作为 sed 定界符，防止路径里的 / 产生干扰
+    # 执行替换
     sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_DATA_FILE"
-
-    # 3. 修正输出文件名后缀 (重要：匹配你 DTS 里的 JDC-RE-SS-01)
-    # 这一行会将顶部的 case 匹配模式也改掉，确保驱动请求 JDC 文件时，脚本能接单
     sed -i 's@cal-ahb-c000000.wifi.bin@cal-ahb-c000000.wifi.JDC-RE-SS-01@g' "$CAL_DATA_FILE"
-
-    echo "[SUCCESS] 修改后的关键行预览："
-    grep "mmcblk0p15" "$CAL_DATA_FILE"
-else
-    echo "[ERROR] 未能定位到 11-ath11k-caldata！"
+    
+    # 【最关键的一步】打印出来！
+    echo "========= 验证无线修复脚本修改是否成功 ========="
+    grep -E "mmcblk0p15|JDC-RE-SS-01" "$CAL_DATA_FILE"
+    echo "==============================================="
 fi

@@ -99,8 +99,8 @@ if [ -n "$CAL_FILES" ]; then
     done
 
     # 2. 专门验证是否存在亚瑟的逻辑 (使用 || true 防止 grep 失败中断编译)
-    echo "[VERIFY] 亚瑟关键提取逻辑最终确认："
-    grep -r "jdcloud,re-ss-01" target/linux/qualcommax -A 1 || echo "未在此路径发现亚瑟逻辑，请检查源码平台！"
+    echo "[VERIFY] 亚瑟提取逻辑深度验证："
+    grep -rA 5 "jdcloud,re-ss-01" target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata || echo "验证失败"
 else
     echo "[ERROR] 全局未找到 11-ath11k-caldata！"
 fi

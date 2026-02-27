@@ -75,61 +75,53 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
-# 无线数据修复
-echo "CONFIG_PARTITION_ADVANCED=y" >> .config
-echo "CONFIG_MMC_BLOCK=y" >> .config
-echo "CONFIG_PARTLABEL=y" >> .config
-echo "CONFIG_EFI_PARTITION=y" >> .config
+######################################################################################################
+# 无线数据修复：四重保险版
+######################################################################################################
 
-# 定位文件
+# 1. 修正内核底座配置 (强制写入 target 配置，确保内核能识别 mmc 且不为模块)
+TARGET_CONF=$(find target/linux/qualcommax -name "config-6.12" -o -name "config-6.6" | head -n 1)
+if [ -n "$TARGET_CONF" ]; then
+    echo "CONFIG_MMC_BLOCK=y" >> "$TARGET_CONF"
+    echo "CONFIG_MMC_QCOM_DML=y" >> "$TARGET_CONF"
+    echo "CONFIG_MMC_SDHCI_MSM=y" >> "$TARGET_CONF"
+fi
+
+# 2. 动态修正 Hotplug 脚本
 CAL_FILES=$(find target/linux/qualcommax -name "11-ath11k-caldata")
+for FILE in $CAL_FILES; do
+    echo "[PROCESSING] 修正 Hotplug: $FILE"
+    sed -i 's/caldata_extract_mmc "[^"]*".*/dd if=\/dev\/mmcblk0p15 of=\/lib\/firmware\/ath11k\/IPQ6018\/hw1.0\/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64/g' "$FILE"
+    sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
+done
 
-if [ -n "$CAL_FILES" ]; then
-    for FILE in $CAL_FILES; do
-        echo "[PROCESSING] 正在执行全文件暴力修正: $FILE"
-        
-        # 1. 针对所有 caldata_extract_mmc 函数，不管它在哪个分支，全部强制指向物理分区
-        # 这样避开了复杂的 case 范围匹配
-        sed -i 's/caldata_extract_mmc "[^"]*".*/dd if=\/dev\/mmcblk0p15 of=\/lib\/firmware\/ath11k\/IPQ6018\/hw1.0\/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64/g' "$FILE"
-
-        # 2. 清除所有可能的后缀干扰 (JDC-RE-SS-01 -> bin)
-        sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
-        
-        # 3. 验证：这次我们多打印几行 (打印匹配后的 10 行)
-        echo "--- 深度自检结果: $FILE ---"
-        grep -A 10 "jdcloud,re-ss-01" "$FILE"
-    done
-    echo "[SUCCESS] 已完成暴力逻辑注入"
-fi
-
-# 修正 rc.local，确保开机强制提取一次校准数据
-# 定位 rc.local 文件
-RC_LOCAL="target/linux/qualcommax/ipq60xx/base-files/etc/rc.local"
-
-if [ -f "$RC_LOCAL" ]; then
-    echo "[Settings] 正在 rc.local 中注入开机保底提取逻辑..."
-    # 在 exit 0 之前插入 dd 命令
-    sed -i '/exit 0/i [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64' "$RC_LOCAL"
-fi
-
-# 创建一个启动服务文件
-mkdir -p target/linux/qualcommax/ipq60xx/base-files/etc/init.d/
-cat > target/linux/qualcommax/ipq60xx/base-files/etc/init.d/fix-caldata << 'EOF'
-#!/bin/sh /etc/rc.common
-
-START=15  # 在网络 (20) 启动之前执行
-
-start() {
-    [ -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && exit 0
+# 3. 强制注入 Preinit 脚本 (这是最有效的抢跑阶段)
+# 注意：直接创建到 target 的 base-files 里，确保 100% 被打包
+PREINIT_DIR="target/linux/qualcommax/ipq60xx/base-files/lib/preinit"
+mkdir -p "$PREINIT_DIR"
+cat > "$PREINIT_DIR/80_extract_caldata" << 'EOF'
+#!/bin/sh
+do_extract_caldata() {
     mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
-    # 强制 dd
-    if [ -b /dev/mmcblk0p15 ]; then
+    [ -b /dev/mmcblk0p15 ] && [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && \
+    dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
+}
+boot_hook_add preinit_main do_extract_caldata
+EOF
+chmod +x "$PREINIT_DIR/80_extract_caldata"
+
+# 4. 注入 Init.d 服务 (用于开机后 fallback 检查)
+INITD_DIR="target/linux/qualcommax/ipq60xx/base-files/etc/init.d"
+mkdir -p "$INITD_DIR"
+cat > "$INITD_DIR/fix-caldata" << 'EOF'
+#!/bin/sh /etc/rc.common
+START=15
+start() {
+    if [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ]; then
+        mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
         dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
-        # 强制重启无线驱动，确保它能看到新提取的文件
         wifi reload
     fi
 }
 EOF
-
-# 给服务文件执行权限
-chmod +x target/linux/qualcommax/ipq60xx/base-files/etc/init.d/fix-caldata
+chmod +x "$INITD_DIR/fix-caldata"

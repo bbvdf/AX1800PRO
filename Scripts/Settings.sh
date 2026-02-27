@@ -81,26 +81,20 @@ echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
 
-# 1. 寻找 qualcommax 平台下所有的 caldata 脚本 (可能会有多个)
+# 定位文件
 CAL_FILES=$(find target/linux/qualcommax -name "11-ath11k-caldata")
 
 if [ -n "$CAL_FILES" ]; then
-    echo "[SUCCESS] 找到以下匹配脚本："
-    echo "$CAL_FILES"
-
     for FILE in $CAL_FILES; do
-        echo "[PROCESSING] 正在修正: $FILE"
+        echo "[PROCESSING] 正在修正亚瑟无线提取逻辑: $FILE"
         
-        # 暴力替换提取路径
-        sed -i 's/caldata_extract_mmc "[^"]*"/caldata_extract_mmc "\/dev\/mmcblk0p15"/g' "$FILE"
+        # 1. 强制提取逻辑：不管原来写的是什么函数，统统换成 dd 提取到 .bin 文件
+        # 我们直接针对 jdcloud 分支，把提取命令改为 dd 物理路径，输出为 .bin
+        sed -i '/jdcloud,re-ss-01/,/;;/ s@caldata_extract_mmc.*@dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64@' "$FILE"
         
-        # 修正文件名后缀 (对齐 Variant)
-        sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$FILE"
+        # 2. 移除所有后缀干扰：确保脚本里的 FIRMWARE 匹配项和文件名都回归默认的 .bin
+        # 撤销之前我们加的 JDC-RE-SS-01 后缀修改
+        sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
     done
-
-    # 2. 专门验证是否存在亚瑟的逻辑 (使用 || true 防止 grep 失败中断编译)
-    echo "[VERIFY] 亚瑟提取逻辑深度验证："
-    grep -rA 5 "jdcloud,re-ss-01" target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata || echo "验证失败"
-else
-    echo "[ERROR] 全局未找到 11-ath11k-caldata！"
+    echo "[SUCCESS] 已完成 .bin 物理提取逻辑修正"
 fi

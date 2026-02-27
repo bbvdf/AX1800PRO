@@ -101,3 +101,13 @@ if [ -n "$CAL_FILES" ]; then
     done
     echo "[SUCCESS] 已完成暴力逻辑注入"
 fi
+
+# 修正 rc.local，确保开机强制提取一次校准数据
+# 定位 rc.local 文件
+RC_LOCAL="target/linux/qualcommax/ipq60xx/base-files/etc/rc.local"
+
+if [ -f "$RC_LOCAL" ]; then
+    echo "[Settings] 正在 rc.local 中注入开机保底提取逻辑..."
+    # 在 exit 0 之前插入 dd 命令
+    sed -i '/exit 0/i [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64' "$RC_LOCAL"
+fi

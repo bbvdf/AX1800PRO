@@ -86,19 +86,18 @@ CAL_FILES=$(find target/linux/qualcommax -name "11-ath11k-caldata")
 
 if [ -n "$CAL_FILES" ]; then
     for FILE in $CAL_FILES; do
-        echo "[PROCESSING] 正在修正: $FILE"
+        echo "[PROCESSING] 正在执行全文件暴力修正: $FILE"
         
-        # 1. 强制提取逻辑：dd 物理路径输出为 .bin
-        sed -i '/jdcloud,re-ss-01/,/;;/ s@caldata_extract_mmc.*@dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64@' "$FILE"
-        
-        # 2. 移除所有后缀干扰
+        # 1. 针对所有 caldata_extract_mmc 函数，不管它在哪个分支，全部强制指向物理分区
+        # 这样避开了复杂的 case 范围匹配
+        sed -i 's/caldata_extract_mmc "[^"]*"/dd if=\/dev\/mmcblk0p15 of=\/lib\/firmware\/ath11k\/IPQ6018\/hw1.0\/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64/g' "$FILE"
+
+        # 2. 清除所有可能的后缀干扰 (JDC-RE-SS-01 -> bin)
         sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
         
-        # 3. 实时预览当前文件的修改结果 (仅打印亚瑟相关部分，避免刷屏)
-        echo "--- 验证文件内容: $FILE ---"
-        grep -A 2 "jdcloud,re-ss-01" "$FILE"
+        # 3. 验证：这次我们多打印几行 (打印匹配后的 10 行)
+        echo "--- 深度自检结果: $FILE ---"
+        grep -A 10 "jdcloud,re-ss-01" "$FILE"
     done
-    echo "[SUCCESS] 已完成 .bin 物理提取逻辑修正"
-else
-    echo "[ERROR] 没找到 11-ath11k-caldata 文件！"
+    echo "[SUCCESS] 已完成暴力逻辑注入"
 fi

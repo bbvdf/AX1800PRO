@@ -81,24 +81,26 @@ echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
 
-# 1. 寻找文件
-CAL_FILE_PATH=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
+# 1. 寻找 qualcommax 平台下所有的 caldata 脚本 (可能会有多个)
+CAL_FILES=$(find target/linux/qualcommax -name "11-ath11k-caldata")
 
-# 2. 判断并提供双向反馈
-if [ -f "$CAL_FILE_PATH" ]; then
-    echo "[SUCCESS] 确认文件存在: $CAL_FILE_PATH"
-    
-    # 执行修改
-    sed -i 's/caldata_extract_mmc "[^"]*"/caldata_extract_mmc "\/dev\/mmcblk0p15"/g' "$CAL_FILE_PATH"
-    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE_PATH"
+if [ -n "$CAL_FILES" ]; then
+    echo "[SUCCESS] 找到以下匹配脚本："
+    echo "$CAL_FILES"
 
-    # 验证打印
-    echo "[VERIFY] 关键提取逻辑修改结果："
-    grep -A 1 "jdcloud,re-ss-01" "$CAL_FILE_PATH"
+    for FILE in $CAL_FILES; do
+        echo "[PROCESSING] 正在修正: $FILE"
+        
+        # 暴力替换提取路径
+        sed -i 's/caldata_extract_mmc "[^"]*"/caldata_extract_mmc "\/dev\/mmcblk0p15"/g' "$FILE"
+        
+        # 修正文件名后缀 (对齐 Variant)
+        sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$FILE"
+    done
+
+    # 2. 专门验证是否存在亚瑟的逻辑 (使用 || true 防止 grep 失败中断编译)
+    echo "[VERIFY] 亚瑟关键提取逻辑最终确认："
+    grep -r "jdcloud,re-ss-01" target/linux/qualcommax -A 1 || echo "未在此路径发现亚瑟逻辑，请检查源码平台！"
 else
-    # --- 没找到情况下的关键反馈 ---
-    echo "[ERROR] 严重错误: 无法定位 11-ath11k-caldata 文件！"
-    echo "[DEBUG] 当前 qualcommax 目录下的所有文件列表如下："
-    find target/linux/qualcommax -maxdepth 4
-    # 这里建议不使用 exit 1，防止中断整个编译工作流，但日志里会非常显眼
+    echo "[ERROR] 全局未找到 11-ath11k-caldata！"
 fi

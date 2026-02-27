@@ -87,16 +87,21 @@ echo "CONFIG_EFI_PARTITION=y" >> .config
 CAL_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
 
 if [ -f "$CAL_FILE" ]; then
-    echo "[Settings] 开始精准修正京东云亚瑟无线脚本..."
+    echo "[Settings] 正在对 11-ath11k-caldata 执行终极物理路径修正..."
 
-    # 1. 修正 IPQ6018 的提取路径 (针对京东云区块)
-    # 使用起始行和结束行匹配，只改 jdcloud 相关的部分
-    sed -i '/jdcloud,re-ss-01/,/;;/ s@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@' "$CAL_FILE"
+    # 1. 修正提取路径：把脚本里所有的 caldata_extract_mmc "0:ART" 替换为物理路径
+    # 注意：这里我们连同单引号的情况也考虑进去
+    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_FILE"
+    sed -i "s@caldata_extract_mmc '0:ART'@caldata_extract_mmc '/dev/mmcblk0p15'@g" "$CAL_FILE"
+
+    # 2. 修正文件名：把脚本请求的所有 .wifi.bin 替换为 .wifi.JDC-RE-SS-01
+    # 这样不管是 case 判断还是输出，都会指向带 Variant 后缀的文件
+    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE"
+
+    # 3. 打印关键区域进行结果确认 (这次我们用 grep，更直观)
+    echo "--- 修改结果自检 (过滤关键字: mmcblk0p15) ---"
+    grep -C 2 "mmcblk0p15" "$CAL_FILE"
     
-    # 2. 修正文件名后缀 (确保路径是 IPQ6018)
-    sed -i '/jdcloud,re-ss-01/,/;;/ s@wifi.bin@wifi.JDC-RE-SS-01@' "$CAL_FILE"
-
-    # 3. 验证确认 (这行非常重要，请在下次编译日志里检查输出)
-    echo "--- 修正结果最终确认 ---"
-    sed -n '/jdcloud,re-ss-01/,/;;/p' "$CAL_FILE"
+    echo "--- 修改结果自检 (过滤关键字: JDC-RE-SS-01) ---"
+    grep "JDC-RE-SS-01" "$CAL_FILE" | head -n 5
 fi

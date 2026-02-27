@@ -107,53 +107,55 @@ for FILE in $CAL_FILES; do
     sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
 done
 
-# 3. 改进 Preinit 脚本：增加“死等”逻辑 (第一道防线：驱动加载前抠出数据)
+# 3. 改进 Preinit 脚本：双重路径注入 (解决 Overlay 挂载后的路径丢失)
 PREINIT_DIR="target/linux/qualcommax/ipq60xx/base-files/lib/preinit"
 mkdir -p "$PREINIT_DIR"
 cat > "$PREINIT_DIR/80_extract_caldata" << 'EOF'
 #!/bin/sh
 do_extract_caldata() {
-    mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
+    # 路径 A: 原始 rootfs (Preinit 视图)
+    local FW_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
+    mkdir -p "$FW_DIR"
     
-    # 增加死等逻辑：最多等 10 秒，直到 mmcblk0p15 出现
+    # 等待磁盘设备
     local timeout=10
     while [ ! -b /dev/mmcblk0p15 ] && [ $timeout -gt 0 ]; do
-        echo "Preinit: Waiting for /dev/mmcblk0p15... ($timeout)" > /dev/kmsg
         sleep 1
         timeout=$((timeout - 1))
     done
 
     if [ -b /dev/mmcblk0p15 ]; then
-        if [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ]; then
-            echo "Preinit: Extracting caldata from p15..." > /dev/kmsg
-            dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
-            # 标记成功，防止后期重复操作
-            touch /tmp/caldata_ready
-        fi
-    else
-        echo "Preinit ERROR: mmcblk0p15 not found after timeout!" > /dev/kmsg
+        echo "Preinit: Writing caldata to BOTH rootfs and ram..." > /dev/kmsg
+        dd if=/dev/mmcblk0p15 of="$FW_DIR/cal-ahb-c000000.wifi.bin" skip=4 bs=1024 count=64
+        
+        # 路径 B: 内存临时目录 (有些固件会从这里寻找)
+        mkdir -p /tmp/lib/firmware/ath11k/IPQ6018/hw1.0
+        cp "$FW_DIR/cal-ahb-c000000.wifi.bin" "/tmp/lib/firmware/ath11k/IPQ6018/hw1.0/"
     fi
 }
 boot_hook_add preinit_main do_extract_caldata
 EOF
 chmod +x "$PREINIT_DIR/80_extract_caldata"
 
-# 4. 注入 Init.d 服务：强制重载补救 (第二道防线：如果文件来晚了，重启无线)
+# 4. 注入 Init.d 服务：强制延迟检测 (针对 ath11k 这种“顽固”驱动)
 INITD_DIR="target/linux/qualcommax/ipq60xx/base-files/etc/init.d"
 mkdir -p "$INITD_DIR"
 cat > "$INITD_DIR/fix-caldata" << 'EOF'
 #!/bin/sh /etc/rc.common
-START=99  # 尽量靠后，确保系统已经稳固
+START=99
 
 start() {
-    # 检查文件是否存在
     local CAL_FILE="/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin"
     
-    # 如果 Preinit 没搞定，这里最后补救一次
+    # 如果文件在最终文件系统中依然丢失，再次补救
     if [ ! -f "$CAL_FILE" ] && [ -b /dev/mmcblk0p15 ]; then
         mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
         dd if=/dev/mmcblk0p15 of="$CAL_FILE" skip=4 bs=1024 count=64
-        echo "Init.d: Caldata fixed late, reloading wifi..." > /dev/kmsg
+    fi
+
+    # 核心：检查 ath11k 是否报错了。如果是，强制它重启。
+    if dmesg | grep -q "ath11k.*failed to load CAL data"; then
+        echo "Init.d: Found ath11k error in dmesg, forcing wifi reload..." > /dev/kmsg
         /sbin/wifi up
         /sbin/wifi reload
     fi

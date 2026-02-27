@@ -75,16 +75,27 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
+
+
 ######################################################################################################
-# 无线数据修复：四重保险版
+# 无线数据修复：终极修正版
 ######################################################################################################
 
-# 1. 修正内核底座配置 (强制写入 target 配置，确保内核能识别 mmc 且不为模块)
+# 1. 核心修正：内核必须内置 MMC 驱动和 GPT 分区支持，否则 Preinit 找不到设备
+# 仅靠追加到 .config 对内核往往无效，必须修改 target 的内核模板配置
 TARGET_CONF=$(find target/linux/qualcommax -name "config-6.12" -o -name "config-6.6" | head -n 1)
 if [ -n "$TARGET_CONF" ]; then
-    echo "CONFIG_MMC_BLOCK=y" >> "$TARGET_CONF"
-    echo "CONFIG_MMC_QCOM_DML=y" >> "$TARGET_CONF"
-    echo "CONFIG_MMC_SDHCI_MSM=y" >> "$TARGET_CONF"
+    echo "[Settings] 强制开启内核 MMC 驱动内置..."
+    # 确保驱动是 =y (内置) 而不是 =m (模块)，因为模块加载太晚了
+    sed -i 's/CONFIG_MMC=m/CONFIG_MMC=y/g' "$TARGET_CONF"
+    sed -i 's/CONFIG_MMC_BLOCK=m/CONFIG_MMC_BLOCK=y/g' "$TARGET_CONF"
+    {
+        echo "CONFIG_MMC_QCOM_DML=y"
+        echo "CONFIG_MMC_SDHCI_MSM=y"
+        echo "CONFIG_PARTITION_ADVANCED=y"
+        echo "CONFIG_EFI_PARTITION=y"
+        echo "CONFIG_MSDOS_PARTITION=y"
+    } >> "$TARGET_CONF"
 fi
 
 # 2. 动态修正 Hotplug 脚本
@@ -95,29 +106,44 @@ for FILE in $CAL_FILES; do
     sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
 done
 
-# 3. 强制注入 Preinit 脚本 (这是最有效的抢跑阶段)
-# 注意：直接创建到 target 的 base-files 里，确保 100% 被打包
+# 3. 改进 Preinit 脚本：增加“死等”逻辑
+# 因为 eMMC 初始化需要时间，脚本必须原地等待分区出现
 PREINIT_DIR="target/linux/qualcommax/ipq60xx/base-files/lib/preinit"
 mkdir -p "$PREINIT_DIR"
 cat > "$PREINIT_DIR/80_extract_caldata" << 'EOF'
 #!/bin/sh
 do_extract_caldata() {
     mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
-    [ -b /dev/mmcblk0p15 ] && [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && \
-    dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
+    
+    # 增加死等逻辑：最多等 10 秒，直到 mmcblk0p15 出现
+    local timeout=10
+    while [ ! -b /dev/mmcblk0p15 ] && [ $timeout -gt 0 ]; do
+        echo "Waiting for /dev/mmcblk0p15... ($timeout)" > /dev/kmsg
+        sleep 1
+        timeout=$((timeout - 1))
+    done
+
+    if [ -b /dev/mmcblk0p15 ]; then
+        if [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ]; then
+            echo "Preinit: Extracting caldata from p15..." > /dev/kmsg
+            dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
+        fi
+    else
+        echo "Preinit ERROR: mmcblk0p15 not found!" > /dev/kmsg
+    fi
 }
 boot_hook_add preinit_main do_extract_caldata
 EOF
 chmod +x "$PREINIT_DIR/80_extract_caldata"
 
-# 4. 注入 Init.d 服务 (用于开机后 fallback 检查)
+# 4. 注入 Init.d 服务 (作为最后一道防线)
 INITD_DIR="target/linux/qualcommax/ipq60xx/base-files/etc/init.d"
 mkdir -p "$INITD_DIR"
 cat > "$INITD_DIR/fix-caldata" << 'EOF'
 #!/bin/sh /etc/rc.common
 START=15
 start() {
-    if [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ]; then
+    if [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && [ -b /dev/mmcblk0p15 ]; then
         mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
         dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
         wifi reload

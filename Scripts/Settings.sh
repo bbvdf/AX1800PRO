@@ -90,7 +90,7 @@ if [ -n "$CAL_FILES" ]; then
         
         # 1. 针对所有 caldata_extract_mmc 函数，不管它在哪个分支，全部强制指向物理分区
         # 这样避开了复杂的 case 范围匹配
-        sed -i 's/caldata_extract_mmc "[^"]*"/dd if=\/dev\/mmcblk0p15 of=\/lib\/firmware\/ath11k\/IPQ6018\/hw1.0\/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64/g' "$FILE"
+        sed -i 's/caldata_extract_mmc "[^"]*".*/dd if=\/dev\/mmcblk0p15 of=\/lib\/firmware\/ath11k\/IPQ6018\/hw1.0\/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64/g' "$FILE"
 
         # 2. 清除所有可能的后缀干扰 (JDC-RE-SS-01 -> bin)
         sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"

@@ -76,32 +76,29 @@ sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 # 无线数据修复
-# 1. 注入内核分区识别 (地基)
 echo "CONFIG_PARTITION_ADVANCED=y" >> .config
 echo "CONFIG_MMC_BLOCK=y" >> .config
 echo "CONFIG_PARTLABEL=y" >> .config
 echo "CONFIG_EFI_PARTITION=y" >> .config
 
-# 2. 修改热插拔脚本 (钥匙)
-# 定位文件
-CAL_FILE=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
+# 1. 寻找文件
+CAL_FILE_PATH=$(find target/linux/qualcommax -name "11-ath11k-caldata" | head -n1)
 
-if [ -f "$CAL_FILE" ]; then
-    echo "[Settings] 正在对 11-ath11k-caldata 执行终极物理路径修正..."
-
-    # 1. 修正提取路径：把脚本里所有的 caldata_extract_mmc "0:ART" 替换为物理路径
-    # 注意：这里我们连同单引号的情况也考虑进去
-    sed -i 's@caldata_extract_mmc "0:ART"@caldata_extract_mmc "/dev/mmcblk0p15"@g' "$CAL_FILE"
-    sed -i "s@caldata_extract_mmc '0:ART'@caldata_extract_mmc '/dev/mmcblk0p15'@g" "$CAL_FILE"
-
-    # 2. 修正文件名：把脚本请求的所有 .wifi.bin 替换为 .wifi.JDC-RE-SS-01
-    # 这样不管是 case 判断还是输出，都会指向带 Variant 后缀的文件
-    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE"
-
-    # 3. 打印关键区域进行结果确认 (这次我们用 grep，更直观)
-    echo "--- 修改结果自检 (过滤关键字: mmcblk0p15) ---"
-    grep -C 2 "mmcblk0p15" "$CAL_FILE"
+# 2. 判断并提供双向反馈
+if [ -f "$CAL_FILE_PATH" ]; then
+    echo "[SUCCESS] 确认文件存在: $CAL_FILE_PATH"
     
-    echo "--- 修改结果自检 (过滤关键字: JDC-RE-SS-01) ---"
-    grep "JDC-RE-SS-01" "$CAL_FILE" | head -n 5
+    # 执行修改
+    sed -i 's/caldata_extract_mmc "[^"]*"/caldata_extract_mmc "\/dev\/mmcblk0p15"/g' "$CAL_FILE_PATH"
+    sed -i 's@wifi.bin@wifi.JDC-RE-SS-01@g' "$CAL_FILE_PATH"
+
+    # 验证打印
+    echo "[VERIFY] 关键提取逻辑修改结果："
+    grep -A 1 "jdcloud,re-ss-01" "$CAL_FILE_PATH"
+else
+    # --- 没找到情况下的关键反馈 ---
+    echo "[ERROR] 严重错误: 无法定位 11-ath11k-caldata 文件！"
+    echo "[DEBUG] 当前 qualcommax 目录下的所有文件列表如下："
+    find target/linux/qualcommax -maxdepth 4
+    # 这里建议不使用 exit 1，防止中断整个编译工作流，但日志里会非常显眼
 fi

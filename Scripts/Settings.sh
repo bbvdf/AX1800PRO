@@ -86,15 +86,19 @@ CAL_FILES=$(find target/linux/qualcommax -name "11-ath11k-caldata")
 
 if [ -n "$CAL_FILES" ]; then
     for FILE in $CAL_FILES; do
-        echo "[PROCESSING] 正在修正亚瑟无线提取逻辑: $FILE"
+        echo "[PROCESSING] 正在修正: $FILE"
         
-        # 1. 强制提取逻辑：不管原来写的是什么函数，统统换成 dd 提取到 .bin 文件
-        # 我们直接针对 jdcloud 分支，把提取命令改为 dd 物理路径，输出为 .bin
+        # 1. 强制提取逻辑：dd 物理路径输出为 .bin
         sed -i '/jdcloud,re-ss-01/,/;;/ s@caldata_extract_mmc.*@dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64@' "$FILE"
         
-        # 2. 移除所有后缀干扰：确保脚本里的 FIRMWARE 匹配项和文件名都回归默认的 .bin
-        # 撤销之前我们加的 JDC-RE-SS-01 后缀修改
+        # 2. 移除所有后缀干扰
         sed -i 's@wifi.JDC-RE-SS-01@wifi.bin@g' "$FILE"
+        
+        # 3. 实时预览当前文件的修改结果 (仅打印亚瑟相关部分，避免刷屏)
+        echo "--- 验证文件内容: $FILE ---"
+        grep -A 2 "jdcloud,re-ss-01" "$FILE"
     done
     echo "[SUCCESS] 已完成 .bin 物理提取逻辑修正"
+else
+    echo "[ERROR] 没找到 11-ath11k-caldata 文件！"
 fi

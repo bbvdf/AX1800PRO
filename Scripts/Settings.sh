@@ -111,3 +111,25 @@ if [ -f "$RC_LOCAL" ]; then
     # 在 exit 0 之前插入 dd 命令
     sed -i '/exit 0/i [ ! -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64' "$RC_LOCAL"
 fi
+
+# 创建一个启动服务文件
+mkdir -p target/linux/qualcommax/ipq60xx/base-files/etc/init.d/
+cat > target/linux/qualcommax/ipq60xx/base-files/etc/init.d/fix-caldata << 'EOF'
+#!/bin/sh /etc/rc.common
+
+START=15  # 在网络 (20) 启动之前执行
+
+start() {
+    [ -f /lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin ] && exit 0
+    mkdir -p /lib/firmware/ath11k/IPQ6018/hw1.0/
+    # 强制 dd
+    if [ -b /dev/mmcblk0p15 ]; then
+        dd if=/dev/mmcblk0p15 of=/lib/firmware/ath11k/IPQ6018/hw1.0/cal-ahb-c000000.wifi.bin skip=4 bs=1024 count=64
+        # 强制重启无线驱动，确保它能看到新提取的文件
+        wifi reload
+    fi
+}
+EOF
+
+# 给服务文件执行权限
+chmod +x target/linux/qualcommax/ipq60xx/base-files/etc/init.d/fix-caldata

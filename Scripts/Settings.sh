@@ -74,3 +74,28 @@ fi
 sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
+
+# 强制创建 hotplug 脚本以生成 by-partlabel 软链接 (解决 WiFi 识别和分区定位问题)
+mkdir -p files/etc/hotplug.d/block
+cat > files/etc/hotplug.d/block/10-partlabel <<EOF
+#!/bin/sh
+# 仅处理添加设备的动作
+[ "\$ACTION" = "add" ] || exit 0
+
+case "\$DEVNAME" in
+    mmcblk*)
+        # 优先获取 PARTLABEL (你 SSH 实验成功的 key)
+        ID_PART_NAME=\$(blkid -s PARTLABEL -o value /dev/\$DEVNAME)
+        # 如果 PARTLABEL 为空，尝试 PART_ENTRY_NAME
+        [ -z "\$ID_PART_NAME" ] && ID_PART_NAME=\$(blkid -s PART_ENTRY_NAME -o value /dev/\$DEVNAME)
+
+        if [ -n "\$ID_PART_NAME" ]; then
+            mkdir -p /dev/disk/by-partlabel
+            ln -sf /dev/\$DEVNAME /dev/disk/by-partlabel/\$ID_PART_NAME
+        fi
+        ;;
+esac
+EOF
+
+# 赋予可执行权限
+chmod +x files/etc/hotplug.d/block/10-partlabel

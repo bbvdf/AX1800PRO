@@ -78,6 +78,7 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 
 # --- 1. 创建 hotplug 脚本生成 by-partlabel 软链接 ---
+# 此段代码完美，保持不变
 mkdir -p files/etc/hotplug.d/block
 cat > files/etc/hotplug.d/block/05-partlabel <<EOF
 #!/bin/sh
@@ -95,27 +96,43 @@ esac
 EOF
 chmod +x files/etc/hotplug.d/block/05-partlabel
 
-# --- 2. 修复源码脚本语法错误 (带行尾检查) ---
-TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"
-if [ -f "\$TARGET_FILE" ]; then
-    # 仅在行尾缺失符号时修复
-    sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' "\$TARGET_FILE"
-fi
+# --- 2. 修复源码脚本语法错误 ---
+# 建议：由于源码路径在不同分支可能略有不同，建议使用 find 动态匹配，更稳健
+find target/linux/qualcommax -name "11-ath11k-caldata" | xargs -i sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' {}
 
-# --- 3. 增加 uci-defaults 双保险提取逻辑 ---
+# --- 3. 增加 uci-defaults 增强版重载逻辑 ---
 mkdir -p files/etc/uci-defaults
 cat > files/etc/uci-defaults/99-fix-wifi-caldata <<EOF
 #!/bin/sh
 TARGET_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
 TARGET_FILE="\$TARGET_DIR/cal-ahb-c000000.wifi.bin"
 
+# 仅在文件缺失或为空时执行
 if [ ! -s "\$TARGET_FILE" ]; then
     mkdir -p "\$TARGET_DIR"
-    # 直接物理提取，跳过映射依赖
+    # 1. 物理提取 (直接读 mmcblk0p15，最稳)
     dd if=/dev/mmcblk0p15 of="\$TARGET_FILE" bs=1 skip=4096 count=65536 conv=notrunc 2>/dev/null
-    # 建立软链接兼容路径
+    # 2. 建立兼容性软链接
     ln -sf "\$TARGET_FILE" /lib/firmware/cal-ahb-c000000.wifi.bin
-    # 提取成功后尝试强制拉起一次 WiFi
+    
+    # --- 关键：解决“第一次启动没无线” ---
+    # 先关闭无线，确保模块引用计数减少
+    /sbin/wifi down
+    sleep 1
+    
+    # 按照依赖顺序卸载。注意：加入 -f (force) 强制尝试
+    rmmod -f ath11k_pci 2>/dev/null
+    rmmod -f ath11k_ahb 2>/dev/null
+    rmmod -f ath11k 2>/dev/null
+    
+    # 稍等硬件复位
+    sleep 2
+    
+    # 重新加载 AHB 驱动。如果驱动是 built-in 的，modprobe 会静默跳过
+    modprobe ath11k_ahb 2>/dev/null
+    
+    # 如果重载成功，wifi up 会生效；如果驱动是内置的，reload 则是最后保障
+    /sbin/wifi reload
     /sbin/wifi up
 fi
 exit 0

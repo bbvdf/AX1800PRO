@@ -101,40 +101,29 @@ chmod +x files/etc/hotplug.d/block/05-partlabel
 find target/linux/qualcommax -name "11-ath11k-caldata" | xargs -i sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' {}
 
 # --- 3. 增加 uci-defaults 增强版重载逻辑 ---
-mkdir -p files/etc/uci-defaults
-cat > files/etc/uci-defaults/99-fix-wifi-caldata <<EOF
-#!/bin/sh
-TARGET_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
-TARGET_FILE="\$TARGET_DIR/cal-ahb-c000000.wifi.bin"
+# --- 提前生成 caldata（真正解决第一次启动无WiFi） ---
+mkdir -p files/etc/init.d
+cat > files/etc/init.d/caldata-fix <<'EOF'
+#!/bin/sh /etc/rc.common
 
-# 仅在文件缺失或为空时执行
-if [ ! -s "\$TARGET_FILE" ]; then
-    mkdir -p "\$TARGET_DIR"
-    # 1. 物理提取 (直接读 mmcblk0p15，最稳)
-    dd if=/dev/mmcblk0p15 of="\$TARGET_FILE" bs=1 skip=4096 count=65536 conv=notrunc 2>/dev/null
-    # 2. 建立兼容性软链接
-    ln -sf "\$TARGET_FILE" /lib/firmware/cal-ahb-c000000.wifi.bin
-    
-    # --- 关键：解决“第一次启动没无线” ---
-    # 先关闭无线，确保模块引用计数减少
-    /sbin/wifi down
-    sleep 1
-    
-    # 按照依赖顺序卸载。注意：加入 -f (force) 强制尝试
-    rmmod -f ath11k_pci 2>/dev/null
-    rmmod -f ath11k_ahb 2>/dev/null
-    rmmod -f ath11k 2>/dev/null
-    
-    # 稍等硬件复位
-    sleep 2
-    
-    # 重新加载 AHB 驱动。如果驱动是 built-in 的，modprobe 会静默跳过
-    modprobe ath11k_ahb 2>/dev/null
-    
-    # 如果重载成功，wifi up 会生效；如果驱动是内置的，reload 则是最后保障
-    /sbin/wifi reload
-    /sbin/wifi up
-fi
-exit 0
+START=02
+STOP=01
+
+start() {
+    TARGET_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
+    TARGET_FILE="$TARGET_DIR/cal-ahb-c000000.wifi.bin"
+    PART="/dev/disk/by-partlabel/ART"
+
+    if [ ! -s "$TARGET_FILE" ] && [ -e "$PART" ]; then
+        mkdir -p "$TARGET_DIR"
+        dd if="$PART" of="$TARGET_FILE" \
+           bs=1 skip=4096 count=65536 2>/dev/null
+    fi
+}
 EOF
-chmod +x files/etc/uci-defaults/99-fix-wifi-caldata
+
+chmod +x files/etc/init.d/caldata-fix
+
+# 关键：默认启用
+mkdir -p files/etc/rc.d
+ln -sf ../init.d/caldata-fix files/etc/rc.d/S02caldata-fix

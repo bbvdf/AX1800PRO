@@ -77,7 +77,7 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 # 强制创建 hotplug 脚本以生成 by-partlabel 软链接 (解决 WiFi 识别和分区定位问题)
 mkdir -p files/etc/hotplug.d/block
-cat > files/etc/hotplug.d/block/10-partlabel <<EOF
+cat > files/etc/hotplug.d/block/05-partlabel <<EOF
 #!/bin/sh
 # 仅处理添加设备的动作
 [ "\$ACTION" = "add" ] || exit 0
@@ -98,4 +98,4 @@ esac
 EOF
 
 # 赋予可执行权限
-chmod +x files/etc/hotplug.d/block/10-partlabel
+chmod +x files/etc/hotplug.d/block/05-partlabel

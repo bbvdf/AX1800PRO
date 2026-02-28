@@ -75,20 +75,17 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
-# 强制创建 hotplug 脚本以生成 by-partlabel 软链接 (解决 WiFi 识别和分区定位问题)
+
+
+# --- 1. 创建 hotplug 脚本生成 by-partlabel 软链接 ---
 mkdir -p files/etc/hotplug.d/block
 cat > files/etc/hotplug.d/block/05-partlabel <<EOF
 #!/bin/sh
-# 仅处理添加设备的动作
 [ "\$ACTION" = "add" ] || exit 0
-
 case "\$DEVNAME" in
     mmcblk*)
-        # 优先获取 PARTLABEL (你 SSH 实验成功的 key)
         ID_PART_NAME=\$(blkid -s PARTLABEL -o value /dev/\$DEVNAME)
-        # 如果 PARTLABEL 为空，尝试 PART_ENTRY_NAME
         [ -z "\$ID_PART_NAME" ] && ID_PART_NAME=\$(blkid -s PART_ENTRY_NAME -o value /dev/\$DEVNAME)
-
         if [ -n "\$ID_PART_NAME" ]; then
             mkdir -p /dev/disk/by-partlabel
             ln -sf /dev/\$DEVNAME /dev/disk/by-partlabel/\$ID_PART_NAME
@@ -96,6 +93,31 @@ case "\$DEVNAME" in
         ;;
 esac
 EOF
-
-# 赋予可执行权限
 chmod +x files/etc/hotplug.d/block/05-partlabel
+
+# --- 2. 修复源码脚本语法错误 (带行尾检查) ---
+TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"
+if [ -f "\$TARGET_FILE" ]; then
+    # 仅在行尾缺失符号时修复
+    sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' "\$TARGET_FILE"
+fi
+
+# --- 3. 增加 uci-defaults 双保险提取逻辑 ---
+mkdir -p files/etc/uci-defaults
+cat > files/etc/uci-defaults/99-fix-wifi-caldata <<EOF
+#!/bin/sh
+TARGET_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
+TARGET_FILE="\$TARGET_DIR/cal-ahb-c000000.wifi.bin"
+
+if [ ! -s "\$TARGET_FILE" ]; then
+    mkdir -p "\$TARGET_DIR"
+    # 直接物理提取，跳过映射依赖
+    dd if=/dev/mmcblk0p15 of="\$TARGET_FILE" bs=1 skip=4096 count=65536 conv=notrunc 2>/dev/null
+    # 建立软链接兼容路径
+    ln -sf "\$TARGET_FILE" /lib/firmware/cal-ahb-c000000.wifi.bin
+    # 提取成功后尝试强制拉起一次 WiFi
+    /sbin/wifi up
+fi
+exit 0
+EOF
+chmod +x files/etc/uci-defaults/99-fix-wifi-caldata

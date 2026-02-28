@@ -77,53 +77,9 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 
 
-# --- 1. 创建 hotplug 脚本生成 by-partlabel 软链接 ---
-# 此段代码完美，保持不变
-mkdir -p files/etc/hotplug.d/block
-cat > files/etc/hotplug.d/block/05-partlabel <<EOF
-#!/bin/sh
-[ "\$ACTION" = "add" ] || exit 0
-case "\$DEVNAME" in
-    mmcblk*)
-        ID_PART_NAME=\$(blkid -s PARTLABEL -o value /dev/\$DEVNAME)
-        [ -z "\$ID_PART_NAME" ] && ID_PART_NAME=\$(blkid -s PART_ENTRY_NAME -o value /dev/\$DEVNAME)
-        if [ -n "\$ID_PART_NAME" ]; then
-            mkdir -p /dev/disk/by-partlabel
-            ln -sf /dev/\$DEVNAME /dev/disk/by-partlabel/\$ID_PART_NAME
-        fi
-        ;;
-esac
-EOF
-chmod +x files/etc/hotplug.d/block/05-partlabel
 
-# --- 2. 修复源码脚本语法错误 ---
+# 修复源码脚本语法错误 ---
 # 建议：由于源码路径在不同分支可能略有不同，建议使用 find 动态匹配，更稳健
 find target/linux/qualcommax -name "11-ath11k-caldata" | xargs -i sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' {}
 
-# --- 3. 增加 uci-defaults 增强版重载逻辑 ---
-# --- 提前生成 caldata（真正解决第一次启动无WiFi） ---
-mkdir -p files/etc/init.d
-cat > files/etc/init.d/caldata-fix <<'EOF'
-#!/bin/sh /etc/rc.common
 
-START=02
-STOP=01
-
-start() {
-    TARGET_DIR="/lib/firmware/ath11k/IPQ6018/hw1.0"
-    TARGET_FILE="$TARGET_DIR/cal-ahb-c000000.wifi.bin"
-    PART="/dev/disk/by-partlabel/ART"
-
-    if [ ! -s "$TARGET_FILE" ] && [ -e "$PART" ]; then
-        mkdir -p "$TARGET_DIR"
-        dd if="$PART" of="$TARGET_FILE" \
-           bs=1 skip=4096 count=65536 2>/dev/null
-    fi
-}
-EOF
-
-chmod +x files/etc/init.d/caldata-fix
-
-# 关键：默认启用
-mkdir -p files/etc/rc.d
-ln -sf ../init.d/caldata-fix files/etc/rc.d/S02caldata-fix

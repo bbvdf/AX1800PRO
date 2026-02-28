@@ -69,3 +69,8 @@ if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
 		echo "qualcommax set up nowifi successfully!"
 	fi
 fi
+
+# 去掉attendedsysupgrade
+sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
+sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
+echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config

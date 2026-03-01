@@ -78,8 +78,12 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 
 
-# 修复源码脚本语法错误 ---
-# 建议：由于源码路径在不同分支可能略有不同，建议使用 find 动态匹配，更稳健
-find target/linux/qualcommax -name "11-ath11k-caldata" | xargs -i sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g' {}
-
-
+# ===== 仅在缺少 |\ 时才修复 11-ath11k-caldata =====
+find target/linux/qualcommax -name "11-ath11k-caldata" | while read f; do
+    if grep -qE 'netgear,rbs350[[:space:]]*$' "$f"; then
+        echo "Fixing syntax in $f"
+        sed -i 's/netgear,rbs350[[:space:]]*$/netgear,rbs350|\\/' "$f"
+    else
+        echo "No fix needed in $f"
+    fi
+done

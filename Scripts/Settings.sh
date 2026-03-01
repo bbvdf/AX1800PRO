@@ -77,8 +77,19 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 
 
-# 1. 修复源码的语法错误（让脚本能跑到 JDCloud 分支）
-find target/linux/qualcommax -name "11-ath11k-caldata" | xargs -r sed -i 's/netgear,rbs350$/netgear,rbs350 | \\/g'
+# 指定确切路径，并兼容行尾空格
+TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"
+
+if [ -f "$TARGET_FILE" ]; then
+    echo "Found caldata script, fixing syntax..."
+    # 使用 [[:space:]]* 匹配可能存在的空格
+    sed -i 's/netgear,rbs350[[:space:]]*$/netgear,rbs350 | \\/g' "$TARGET_FILE"
+    
+    # 验证修复结果
+    grep "rbs350" "$TARGET_FILE"
+else
+    echo "Warning: Caldata script NOT found at $TARGET_FILE"
+fi
 
 # 2. 建立 by-partlabel 链接（让源码里的 caldata_extract_mmc 函数能找到设备）
 mkdir -p files/etc/hotplug.d/block

@@ -77,21 +77,29 @@ echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
 
 
-# 指定确切路径，并兼容行尾空格
+# --- 修复源码脚本语法错误 (仅在检测到错误时执行) ---
 TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"
 
 if [ -f "$TARGET_FILE" ]; then
-    echo "Found caldata script, fixing syntax..."
-    # 使用 [[:space:]]* 匹配可能存在的空格
-    sed -i 's/netgear,rbs350[[:space:]]*$/netgear,rbs350 | \\/g' "$TARGET_FILE"
-    
-    # 验证修复结果
-    grep "rbs350" "$TARGET_FILE"
-else
-    echo "Warning: Caldata script NOT found at $TARGET_FILE"
+    # 逻辑：查找包含 rbs350 的行，且该行不包含续行符 '|'
+    if grep -q "netgear,rbs350" "$TARGET_FILE" && ! grep -q "netgear,rbs350[[:space:]]*|" "$TARGET_FILE"; then
+        echo "[FIX] 检测到 11-ath11k-caldata 语法错误，正在修复..."
+        # 兼容可能存在的空格，将其替换为标准续行格式
+        sed -i 's/netgear,rbs350[[:space:]]*$/netgear,rbs350 | \\/g' "$TARGET_FILE"
+        
+        # 验证修复结果
+        if grep -q "netgear,rbs350 | \\\\" "$TARGET_FILE"; then
+            echo "[SUCCESS] 语法修复成功！"
+        else
+            echo "[ERROR] 语法修复失败，请检查 sed 匹配规则。"
+        fi
+    else
+        echo "[SKIP] 11-ath11k-caldata 语法正常或已修复，跳过。"
+    fi
 fi
 
-# 2. 建立 by-partlabel 链接（让源码里的 caldata_extract_mmc 函数能找到设备）
+# --- 2. 建立 by-partlabel 链接 (这是 caldata_extract_mmc 函数运行的前提) ---
+# 这个脚本建议保留，因为它不修改源码，只在固件运行时提供必要的设备映射
 mkdir -p files/etc/hotplug.d/block
 cat > files/etc/hotplug.d/block/05-partlabel <<EOF
 #!/bin/sh

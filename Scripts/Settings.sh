@@ -87,3 +87,22 @@ find target/linux/qualcommax -name "11-ath11k-caldata" | while read f; do
         echo "No fix needed in $f"
     fi
 done
+
+# --- 2. 建立 by-partlabel 链接 (这是 caldata_extract_mmc 函数运行的前提) ---
+# 这个脚本建议保留，因为它不修改源码，只在固件运行时提供必要的设备映射
+mkdir -p files/etc/hotplug.d/block
+cat > files/etc/hotplug.d/block/05-partlabel <<EOF
+#!/bin/sh
+[ "\$ACTION" = "add" ] || exit 0
+case "\$DEVNAME" in
+    mmcblk*)
+        ID_PART_NAME=\$(blkid -s PARTLABEL -o value /dev/\$DEVNAME)
+        [ -z "\$ID_PART_NAME" ] && ID_PART_NAME=\$(blkid -s PART_ENTRY_NAME -o value /dev/\$DEVNAME)
+        if [ -n "\$ID_PART_NAME" ]; then
+            mkdir -p /dev/disk/by-partlabel
+            ln -sf /dev/\$DEVNAME /dev/disk/by-partlabel/\$ID_PART_NAME
+        fi
+        ;;
+esac
+EOF
+chmod +x files/etc/hotplug.d/block/05-partlabel

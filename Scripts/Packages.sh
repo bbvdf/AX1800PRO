@@ -78,8 +78,9 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 
 # adguardhome包
 
+#UPDATE_PACKAGE "adguardhome" "xiaoxiao29/luci-app-adguardhome" "master" "pkg"
+#UPDATE_PACKAGE "luci-app-adguardhome" "xiaoxiao29/luci-app-adguardhome" "master" "pkg"
 UPDATE_PACKAGE "adguardhome" "xiaoxiao29/luci-app-adguardhome" "master" "pkg"
-UPDATE_PACKAGE "luci-app-adguardhome" "xiaoxiao29/luci-app-adguardhome" "master" "pkg"
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"

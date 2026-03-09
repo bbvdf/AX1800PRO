@@ -80,7 +80,7 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master" "name"
+UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"
@@ -142,7 +142,7 @@ rm -rf ../feeds/packages/net/{dae*}
 #rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 
 # #更新golang为最新版
-#rm -rf ../feeds/packages/lang/golang
+rm -rf ../feeds/packages/lang/golang
 git clone -b 26.x https://github.com/sbwml/packages_lang_golang ../feeds/packages/lang/golang
 
 

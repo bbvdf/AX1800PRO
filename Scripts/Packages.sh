@@ -81,6 +81,13 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
+# 进入插件目录，手动拉取缺失的子模块内容
+if [ -d "luci-app-daed" ]; then
+    cd luci-app-daed
+    # 强制拉取子模块（daed 依赖 wing 和前端 web 资源）
+    git submodule update --init --recursive
+    cd ..
+fi
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"
@@ -142,8 +149,8 @@ rm -rf ../feeds/packages/net/{dae*}
 #rm -rf ../feeds/packages/net/{v2ray-geodata,dae*}
 
 # #更新golang为最新版
-# rm -rf ../feeds/packages/lang/golang
-# git clone -b 26.x https://github.com/sbwml/packages_lang_golang ../feeds/packages/lang/golang
+rm -rf ../feeds/packages/lang/golang
+git clone -b 26.x https://github.com/sbwml/packages_lang_golang ../feeds/packages/lang/golang
 
 
 #cp -r $GITHUB_WORKSPACE/package/* ./

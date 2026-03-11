@@ -71,14 +71,7 @@ UPDATE_PACKAGE() {
 # UPDATE_PACKAGE "easytier" "EasyTier/luci-app-easytier" "main"
 # UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 
-UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "master"
-# 进入插件目录，手动拉取缺失的子模块内容
-if [ -d "luci-app-daed" ]; then
-    cd luci-app-daed
-    # 强制拉取子模块（daed 依赖 wing 和前端 web 资源）
-    git submodule update --init --recursive
-    cd ..
-fi
+UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "kix"
 
 UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
@@ -86,8 +79,8 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 # adguardhome包
 
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-#UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
+UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
+#UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"

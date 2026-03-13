@@ -1,4 +1,14 @@
 #!/bin/bash
+
+# --- 1. Feeds 源替换 (必须放在最前面) ---
+# 替换 SQM-NSS 仓库地址
+sed -i 's|https://github.com/qosmio/sqm-scripts-nss.git|https://github.com/JuliusBairaktaris/sqm-scripts-nss.git|g' feeds.conf.default
+
+# 由于 Settings.sh 在 Workflow 的 feeds update 之后运行，需要强制刷新该插件
+./scripts/feeds update sqm_scripts_nss
+./scripts/feeds install -a -p sqm_scripts_nss
+
+# 加载全局函数
 . $(dirname "$(realpath "$0")")/function.sh
 #修改默认主题
 sed -i "s/luci-theme-bootstrap/luci-theme-$WRT_THEME/g" $(find ./feeds/luci/collections/ -type f -name "Makefile")
@@ -116,3 +126,44 @@ case "\$DEVNAME" in
 esac
 EOF
 chmod +x files/etc/hotplug.d/block/05-partlabel
+
+# --- 自定义开机初始化脚本 (uci-defaults) ---
+# 固件第一次启动时会自动执行这里的所有命令
+mkdir -p files/etc/uci-defaults
+cat > files/etc/uci-defaults/99-custom-settings <<EOF
+#!/bin/sh
+
+# 1. 替换软件源 (针对新版 ImmortalWrt 的 apk 包管理器)
+if [ -d "/etc/apk/repositories.d" ]; then
+    sed -i 's/downloads.immortalwrt.org/mirrors.pku.edu.cn\/immortalwrt/g' /etc/apk/repositories.d/*.list
+fi
+
+# 2. 配置 WAN 口 PPPoE
+uci set network.wan.proto='pppoe'
+
+# 3. 配置 5G 无线 (radio0)
+uci set wireless.radio0.hwmode='11a'
+uci set wireless.radio0.htmode='HE80'
+uci set wireless.radio0.channel='149'
+uci set wireless.radio0.disabled='0'
+uci set wireless.radio0.txpower='20'
+uci set wireless.default_radio0.ssid='bbvdf5g'
+uci set wireless.default_radio0.encryption='psk2+ccmp'
+uci set wireless.default_radio0.key='bb699236'
+
+# 4. 配置 2.4G 无线 (radio1)
+uci set wireless.radio1.channel='6'
+uci set wireless.radio1.disabled='0'
+uci set wireless.radio1.txpower='20'
+uci set wireless.default_radio1.ssid='bbvdf2.4g'
+uci set wireless.default_radio1.encryption='psk2+ccmp'
+uci set wireless.default_radio1.key='bb699236'
+
+# 5. 强制保存并应用
+uci commit wireless
+uci commit network
+
+exit 0
+EOF
+
+chmod +x files/etc/uci-defaults/99-custom-settings

@@ -79,8 +79,8 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 # adguardhome包
 
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-#UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
+#UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
+UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"

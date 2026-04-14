@@ -85,7 +85,33 @@ sed -i 's/+luci-app-attendedsysupgrade//g' feeds/luci/collections/luci/Makefile
 sed -i '/CONFIG_PACKAGE_luci-app-attendedsysupgrade/d' ./.config
 echo "CONFIG_PACKAGE_luci-app-attendedsysupgrade=n" >> ./.config
 
+# --- 修正 AdGuardHome 脚本中的 config_editor 函数 ---
+# 使用 find 在整个 package 目录下搜索初始化脚本，兼容不同源码结构
+ADG_INIT=$(find ./package -type f -name AdGuardHome | grep "etc/init.d/AdGuardHome" | head -n 1)
 
+if [ -n "$ADG_INIT" ] && [ -f "$ADG_INIT" ]; then
+    echo "[FIX] 找到 AdGuardHome 脚本: $ADG_INIT，正在修正逻辑..."
+    
+    # 使用 sed 整体替换有问题的 config_editor 函数
+    sed -i '/config_editor()/,/^}/c \
+config_editor() {\
+	local yaml="$1" value="$2" file="$3" ro="$4"\
+	if [ "$ro" = "1" ]; then\
+		awk -v yaml="$yaml" '\''BEGIN{split(yaml,part,"\\.");i=1;l=length(part);s=""}{if(match($0,s""part[i]":")){if(i==l){sub(/^[^:]+: */,"");print;exit}s=s"[- ]{2}";i++}}'\'' "$file"\
+	else\
+		awk -v yaml="$yaml" -v value="$value" '\''BEGIN{split(yaml,part,"\\.");i=1;l=length(part);s=""}{if(match($0,s""part[i]":")){if(i==l){match($0,/^[[:space:]]*/);indent=substr($0,RSTART,RLENGTH);$0=indent part[i]": "value}s=s"[- ]{2}";i++}print $0}'\'' "$file" > "$file.tmp" && mv "$file.tmp" "$file"\
+	fi\
+}' "$ADG_INIT"
+
+    # 验证修复结果
+    if grep -q "indent=substr" "$ADG_INIT"; then
+        echo "[SUCCESS] AdGuardHome 逻辑修正成功！"
+    else
+        echo "[ERROR] AdGuardHome 修正失败，请检查 sed 替换逻辑。"
+    fi
+else
+    echo "[SKIP] 未能在 ./package 目录下找到 AdGuardHome 初始化脚本，跳过修正。"
+fi
 
 # --- 修复源码脚本语法错误 (仅在检测到错误时执行) ---
 TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"

@@ -176,7 +176,14 @@ jobs:
           
           $GITHUB_WORKSPACE/Scripts/Settings.sh
 
-          make defconfig -j$(nproc) && make clean -j$(nproc)
+          # 1. 补全 OpenWrt 基础配置
+          make defconfig -j$(nproc)
+          
+          # 2. 【核心修复】强制让内核对所有新选项直接使用默认值，防止交互卡死
+          make target/linux/refresh V=s || true
+          
+          # 3. 清理残留
+          make clean -j$(nproc)
 
       - name: Download Packages
         if: env.WRT_TEST != 'true'

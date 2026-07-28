@@ -1,5 +1,6 @@
 #CI项目
-name: QCA-LiBwrt-main
+name: QCA-LiBwrt-25.12
+
 
 #CI计划
 on:

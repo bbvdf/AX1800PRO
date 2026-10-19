@@ -18,7 +18,7 @@ env:
   WRT_REPO: https://github.com/JuliusBairaktaris/openwrt-ppe-nss
   WRT_BRANCH: ppe-nss
   WRT_CONFIG: IPQ60XX-PPENSS
-  WRT_THEME: argon
+  WRT_THEME: aurora
   WRT_NAME: NERCH_Plus
   WRT_SSID: NERCH_Plus
   WRT_WORD: '8765432101'
@@ -91,7 +91,8 @@ jobs:
             CONFIG_PACKAGE_ppe-qos \
             CONFIG_PACKAGE_luci-app-ppe-qos \
             CONFIG_PACKAGE_luci-app-daed \
-            CONFIG_PACKAGE_luci-theme-argon; do
+            CONFIG_PACKAGE_luci-theme-aurora \
+            CONFIG_PACKAGE_adguardhome; do
             if grep -q "^$s=y" .config; then
               echo "OK       $s"
             else

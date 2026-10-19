@@ -22,6 +22,7 @@ git clone --no-checkout --depth 1 https://github.com/immortalwrt/immortalwrt mwr
 cd mwrt
 git sparse-checkout set \
 	package/emortal/autocore \
+	package/emortal/automount \
 	package/emortal/cpufreq \
 	package/emortal/default-settings \
 	package/utils/mhz \
@@ -36,6 +37,13 @@ cd .. && rm -rf mwrt
 P=target/linux/generic/hack-6.18/312-arm64-cpuinfo-Add-model-name-in-proc-cpuinfo-for-64bit-ta.patch
 if [ -d target/linux/generic/hack-6.18 ] && [ ! -f "$P" ]; then
 	curl -sSL -o "$P" "https://raw.githubusercontent.com/immortalwrt/immortalwrt/master/$P" || rm -f "$P"
+fi
+
+# 4) aurora 主题与配置页（eamonxg，仓库根即包目录）
+if [ ! -d package/luci-theme-aurora ]; then
+	git clone --depth 1 -q https://github.com/eamonxg/luci-theme-aurora.git package/luci-theme-aurora
+	git clone --depth 1 -q https://github.com/eamonxg/luci-app-aurora-config.git package/luci-app-aurora-config
+	rm -rf package/luci-theme-aurora/.git package/luci-app-aurora-config/.git
 fi
 
 echo "ppe-setup done: feeds=$(grep -c '^src-' feeds.conf.default), emortal=$(ls -d package/autocore package/cpufreq package/default-settings 2>/dev/null | wc -l)"

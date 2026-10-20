@@ -22,6 +22,10 @@ git clone --depth 1 -b edma-nss https://github.com/JuliusBairaktaris/nss-package
 cp -R .nsspkg/nss-firmware ./package/ || exit 1
 rm -rf .nsspkg
 echo "ppe: immortalwrt emortal + nss-firmware added" 
+# kenzok8 的 AGH 前端已被 Packages.sh 移入 feeds/luci/applications/，这里重新 install 一次
+# 让 feeds 重建 package/feeds/luci 的链接与索引，否则 defconfig 不收录该符号
+./scripts/feeds install -f luci-app-adguardhome >/dev/null 2>&1 || ./scripts/feeds install luci-app-adguardhome
+[ -f ./package/feeds/luci/luci-app-adguardhome/Makefile ] && echo "ppe: luci-app-adguardhome linked into package/feeds/luci" || echo "WARN: luci-app-adguardhome link missing"
 fi
 
 # 加载全局函数

@@ -9,6 +9,15 @@ sed -i 's|https://github.com/qosmio/sqm-scripts-nss.git|https://github.com/Juliu
 # 由于 Settings.sh 在 Workflow 的 feeds update 之后运行，需要强制刷新该插件
 ./scripts/feeds update sqm_scripts_nss
 ./scripts/feeds install -a -p sqm_scripts_nss
+else
+# ppe 线补 immortalwrt 私有包：luci-app-cpufreq / autocore / default-settings / automount 依赖它们
+git clone --no-checkout --depth 1 https://github.com/immortalwrt/immortalwrt .mwrt
+( cd .mwrt && git sparse-checkout set package/emortal/autocore package/emortal/automount package/emortal/cpufreq package/emortal/default-settings package/utils/mhz package/utils/px5g-openssl && git checkout )
+cp -R .mwrt/package/emortal/* ./package/
+cp -R .mwrt/package/utils/mhz ./package/
+cp -R .mwrt/package/utils/px5g-openssl ./package/
+rm -rf .mwrt
+echo "ppe: immortalwrt emortal packages added"
 fi
 
 # 加载全局函数

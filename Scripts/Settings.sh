@@ -1,12 +1,15 @@
 #!/bin/bash
 
 # --- 1. Feeds 源替换 (必须放在最前面) ---
+# ppe 线的 feeds 由 WRT_FEEDS(ppe.feeds.conf) 在 clone 后覆盖，这里只处理 vendor NSS 栈
+if [ "$WRT_STACK" != "ppe" ]; then
 # 替换 SQM-NSS 仓库地址
 sed -i 's|https://github.com/qosmio/sqm-scripts-nss.git|https://github.com/JuliusBairaktaris/sqm-scripts-nss.git|g' feeds.conf.default
 
 # 由于 Settings.sh 在 Workflow 的 feeds update 之后运行，需要强制刷新该插件
 ./scripts/feeds update sqm_scripts_nss
 ./scripts/feeds install -a -p sqm_scripts_nss
+fi
 
 # 加载全局函数
 . $(dirname "$(realpath "$0")")/function.sh
@@ -63,7 +66,7 @@ fi
 
 #高通平台调整
 DTS_PATH="./target/linux/qualcommax/files/arch/arm64/boot/dts/qcom/"
-if [[ $WRT_TARGET == *"QUALCOMMAX"* ]]; then
+if [[ $WRT_TARGET == *"QUALCOMMAX"* && "$WRT_STACK" != "ppe" ]]; then
 	#取消nss相关feed
 	#echo "CONFIG_FEED_nss_packages=n" >> ./.config
 	#echo "CONFIG_FEED_sqm_scripts_nss=n" >> ./.config

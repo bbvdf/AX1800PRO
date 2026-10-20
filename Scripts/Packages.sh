@@ -71,18 +71,23 @@ UPDATE_PACKAGE() {
 # UPDATE_PACKAGE "easytier" "EasyTier/luci-app-easytier" "main"
 # UPDATE_PACKAGE "quickfile" "sbwml/luci-app-quickfile" "main"
 
+# ppe 线用 immortalwrt/luci 自带的 luci-app-daed，不 clone 第三方
+if [ "$WRT_STACK" != "ppe" ]; then
 UPDATE_PACKAGE "luci-app-daed" "QiuSimons/luci-app-daed" "kix"
+fi
 
 UPDATE_PACKAGE "aurora" "eamonxg/luci-theme-aurora" "master"
 UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 
 # adguardhome包
 
+if [ "$WRT_STACK" != "ppe" ]; then
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
+fi
 
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"

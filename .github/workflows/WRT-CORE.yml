@@ -46,6 +46,9 @@ on:
       WRT_ARCH:
         required: false
         type: string
+      WRT_FEEDS:
+        required: false
+        type: string
 env:
   GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
   WRT_CONFIG: ${{inputs.WRT_CONFIG}}
@@ -62,6 +65,8 @@ env:
   WRT_DIR: 'wrt'
   CI_NAME: ${{inputs.CI_NAME}}
   WRT_ARCH: ${{inputs.WRT_ARCH}}
+  WRT_FEEDS: ${{inputs.WRT_FEEDS}}
+  WRT_STACK: ${{ contains(inputs.WRT_REPO, 'ppe-nss') && 'ppe' || 'nss' }}
 
 jobs:
   core:
@@ -128,6 +133,12 @@ jobs:
           git clone --depth=1 --single-branch --branch $WRT_BRANCH $WRT_REPO ./wrt/
 
           cd ./wrt/ && echo "WRT_HASH=$(git log -1 --pretty=format:'%h')" >> $GITHUB_ENV
+
+      - name: Load custom feeds
+        if: env.WRT_FEEDS != ''
+        run: |
+          cp "$GITHUB_WORKSPACE/Scripts/$WRT_FEEDS" ./wrt/feeds.conf.default
+          echo "custom feeds loaded:" && cat ./wrt/feeds.conf.default
 
       - name: Check Scripts
         run: |

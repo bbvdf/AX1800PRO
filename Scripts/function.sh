@@ -146,7 +146,8 @@ function generate_config() {
     echo "CONFIG_USE_APK=n" >> $config_file
   fi
 
-  set_nss_driver $config_file
+  # ppe-nss 上没有 vendor NSS 包，跳过
+  [ "$WRT_STACK" = "ppe" ] || set_nss_driver $config_file
   #增加ebpf
   cat_ebpf_config $config_file
   enable_skb_recycler $config_file

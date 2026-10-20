@@ -83,8 +83,14 @@ UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 [ -f ./luci-app-adguardhome/Makefile ] || { echo "ERROR: kenzok8 luci-app-adguardhome missing Makefile"; ls -la ./luci-app-adguardhome 2>/dev/null | head; exit 1; }
 echo "kenzok8 luci-app-adguardhome: $(grep -m1 '^PKG_RELEASE' ./luci-app-adguardhome/Makefile)"
 # 放在 package/ 下时 defconfig 扫不到该符号（实测 .config 里被静默丢弃），移进 luci feed 才被收录
-rm -rf ./feeds/luci/applications/luci-app-adguardhome
-mv ./luci-app-adguardhome ./feeds/luci/applications/
+# 注意：本脚本的工作目录是 wrt/package/，feed 源目录是 ../feeds/...
+rm -rf ../feeds/luci/applications/luci-app-adguardhome
+mv ./luci-app-adguardhome ../feeds/luci/applications/ || { echo "ERROR: move luci-app-adguardhome into feeds/luci failed"; exit 1; }
+[ -f ../feeds/luci/applications/luci-app-adguardhome/Makefile ] || { echo "ERROR: Makefile missing after move"; exit 1; }
+# feeds install 建的链接可能因目录被删而失效，重建
+rm -rf ./feeds/luci/luci-app-adguardhome
+ln -sfn ../../../feeds/luci/applications/luci-app-adguardhome ./feeds/luci/luci-app-adguardhome
+echo "luci-app-adguardhome: $(grep -m1 '^PKG_RELEASE' ../feeds/luci/applications/luci-app-adguardhome/Makefile)"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"

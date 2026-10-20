@@ -11,13 +11,17 @@ sed -i 's|https://github.com/qosmio/sqm-scripts-nss.git|https://github.com/Juliu
 ./scripts/feeds install -a -p sqm_scripts_nss
 else
 # ppe 线补 immortalwrt 私有包：luci-app-cpufreq / autocore / default-settings / automount 依赖它们
-git clone --no-checkout --depth 1 https://github.com/immortalwrt/immortalwrt .mwrt
-( cd .mwrt && git sparse-checkout set package/emortal/autocore package/emortal/automount package/emortal/cpufreq package/emortal/default-settings package/utils/mhz package/utils/px5g-openssl && git checkout )
-cp -R .mwrt/package/emortal/* ./package/
-cp -R .mwrt/package/utils/mhz ./package/
-cp -R .mwrt/package/utils/px5g-openssl ./package/
+git clone --no-checkout --depth 1 https://github.com/immortalwrt/immortalwrt .mwrt || { echo "ERROR: clone immortalwrt failed"; exit 1; }
+( cd .mwrt && git sparse-checkout set package/emortal/autocore package/emortal/automount package/emortal/cpufreq package/emortal/default-settings package/utils/mhz package/utils/px5g-openssl && git checkout ) || { echo "ERROR: sparse checkout failed"; exit 1; }
+cp -R .mwrt/package/emortal/* ./package/ || exit 1
+cp -R .mwrt/package/utils/mhz ./package/ || exit 1
+cp -R .mwrt/package/utils/px5g-openssl ./package/ || exit 1
 rm -rf .mwrt
-echo "ppe: immortalwrt emortal packages added"
+# nss-packages 只取 nss-firmware（整条 feed 会把 vendor 驱动带进 Kconfig）
+git clone --depth 1 -b edma-nss https://github.com/JuliusBairaktaris/nss-packages.git .nsspkg || { echo "ERROR: clone nss-packages failed"; exit 1; }
+cp -R .nsspkg/nss-firmware ./package/ || exit 1
+rm -rf .nsspkg
+echo "ppe: immortalwrt emortal + nss-firmware added" 
 fi
 
 # 加载全局函数
@@ -128,7 +132,7 @@ fi
 # --- 修复源码脚本语法错误 (仅在检测到错误时执行) ---
 TARGET_FILE="target/linux/qualcommax/ipq60xx/base-files/etc/hotplug.d/firmware/11-ath11k-caldata"
 
-if [ -f "$TARGET_FILE" ]; then
+if [ "$WRT_STACK" != "ppe" ] && [ -f "$TARGET_FILE" ]; then
     # 逻辑：查找包含 rbs350 的行，且该行不包含续行符 '|'
     if grep -q "netgear,rbs350" "$TARGET_FILE" && ! grep -q "netgear,rbs350[[:space:]]*|" "$TARGET_FILE"; then
         echo "[FIX] 检测到 11-ath11k-caldata 语法错误，正在修复..."
@@ -210,6 +214,7 @@ chmod +x files/etc/uci-defaults/99-custom-settings
 
 # --- ppe-nss：GENERAL.txt 带的 vendor NSS 包在该栈不存在（nss feed 只用于取 nss-firmware）---
 if [ "$WRT_STACK" = "ppe" ]; then
-	sed -i '/CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-vlan/d; /CONFIG_PACKAGE_kmod-qca-nss-ecm/d; /CONFIG_PACKAGE_sqm-scripts-nss/d' ./.config
+	# vendor NSS 包 + 三个在任何 feed 里都没有来源的符号（luci-proto-bonding / v2ray-geodata-updater / zram-ctl）
+	sed -i '/CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-vlan/d; /CONFIG_PACKAGE_kmod-qca-nss-ecm/d; /CONFIG_PACKAGE_sqm-scripts-nss/d; /CONFIG_PACKAGE_luci-proto-bonding/d; /CONFIG_PACKAGE_v2ray-geodata-updater/d; /CONFIG_PACKAGE_zram-ctl/d' ./.config
 	echo "ppe: vendor NSS symbols stripped from .config"
 fi

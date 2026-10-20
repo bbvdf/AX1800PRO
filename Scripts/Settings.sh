@@ -198,3 +198,9 @@ exit 0
 EOF
 
 chmod +x files/etc/uci-defaults/99-custom-settings
+
+# --- ppe-nss：GENERAL.txt 带的 vendor NSS 包在该栈不存在（nss feed 只用于取 nss-firmware）---
+if [ "$WRT_STACK" = "ppe" ]; then
+	sed -i '/CONFIG_PACKAGE_kmod-qca-nss-drv-pppoe/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-bridge-mgr/d; /CONFIG_PACKAGE_kmod-qca-nss-drv-vlan/d; /CONFIG_PACKAGE_kmod-qca-nss-ecm/d; /CONFIG_PACKAGE_sqm-scripts-nss/d' ./.config
+	echo "ppe: vendor NSS symbols stripped from .config"
+fi

@@ -84,6 +84,11 @@ UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
 UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 
+# ppe-nss：immortalwrt 的 miniupnpd 带 020-descr-filter-fix.patch，与 2.3.11 源码不匹配，改用 openwrt 官方包
+if [ "$WRT_STACK" = "ppe" ]; then
+UPDATE_PACKAGE "miniupnpd" "openwrt/packages" "master" "pkg"
+fi
+
 #UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"
 #UPDATE_PACKAGE "luci-app-adguardhome" "ThingsWhy/luci-app-adguardhome" "main"

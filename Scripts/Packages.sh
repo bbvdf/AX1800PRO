@@ -80,6 +80,8 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 # 前端也用 kenzok8 的（上面 pkg 提取已把它一并拷入，版本 1.0-r9，与现固件一致）
+[ -f ./luci-app-adguardhome/Makefile ] || { echo "ERROR: kenzok8 luci-app-adguardhome missing Makefile"; ls -la ./luci-app-adguardhome 2>/dev/null | head; exit 1; }
+echo "kenzok8 luci-app-adguardhome: $(grep -m1 '^PKG_RELEASE' ./luci-app-adguardhome/Makefile)"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"

@@ -79,20 +79,18 @@ UPDATE_PACKAGE "aurora-config" "eamonxg/luci-app-aurora-config" "master"
 # adguardhome包
 
 UPDATE_PACKAGE "adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
-# pkg 模式的 find 是 "*$PKG_NAME*"，会把 luci-app-adguardhome 一并拷进 package/，
-# 导致下一条 clone 前端时目标已存在（0510 主线一直靠静默失败掩盖）；这里先清掉
-rm -rf ./luci-app-adguardhome
+# 前端也用 kenzok8 的（上面 pkg 提取已把它一并拷入，版本 1.0-r9，与现固件一致）
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"
 #UPDATE_PACKAGE "luci-app-adguardhome" "w9315273/luci-app-adguardhome" "master"
-UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
+# UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"  # 改用 kenzok8 那份
 
 # ppe-nss：immortalwrt 的 miniupnpd 带 020-descr-filter-fix.patch，与 2.3.11 源码不匹配，改用 openwrt 官方包
 if [ "$WRT_STACK" = "ppe" ]; then
 UPDATE_PACKAGE "miniupnpd" "openwrt/packages" "master" "pkg"
 fi
 
-#UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"
+## UPDATE_PACKAGE "luci-app-adguardhome" "OneNAS-space/luci-app-adguardhome" "master"  # 改用 kenzok8 那份
 #UPDATE_PACKAGE "luci-app-adguardhome" "stevenjoezhang/luci-app-adguardhome" "dev"
 #UPDATE_PACKAGE "luci-app-adguardhome" "ThingsWhy/luci-app-adguardhome" "main"
 

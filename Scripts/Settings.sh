@@ -165,6 +165,8 @@ cat > files/etc/uci-defaults/99-custom-settings <<EOF
 # 1. 替换软件源 (针对新版 ImmortalWrt 的 apk 包管理器)
 if [ -d "/etc/apk/repositories.d" ]; then
     sed -i 's/downloads.immortalwrt.org/mirrors.pku.edu.cn\/immortalwrt/g' /etc/apk/repositories.d/*.list
+    # ppe-nss 是 OpenWrt 源，同样走 pku 镜像
+    sed -i 's/downloads.openwrt.org/mirrors.pku.edu.cn\/openwrt/g' /etc/apk/repositories.d/*.list
 fi
 
 # 2. 配置 WAN 口 PPPoE

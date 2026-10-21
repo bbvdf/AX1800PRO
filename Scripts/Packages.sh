@@ -95,6 +95,8 @@ ln -sfn ../../../feeds/luci/applications/luci-app-adguardhome ./feeds/luci/luci-
 AGH_MK=../feeds/luci/applications/luci-app-adguardhome/Makefile
 # 依赖 +ca-certs 在 openwrt main 不存在（只有 ca-bundle），kconfig 因此判定不可满足而丢弃整包
 sed -i 's|+ca-certs|+ca-bundle|' "$AGH_MK"
+# kenzok8 的 lua 前端在 luci.mk 下依赖不全（无 luci-base/lua-runtime），依赖不满足时 kconfig 会把整包隐藏
+sed -i 's|^LUCI_DEPENDS:=.*|LUCI_DEPENDS:=+ca-bundle +curl +wget-ssl +luci-base +luci-lua-runtime +luci-compat|' "$AGH_MK"
 grep -m1 '^LUCI_DEPENDS' "$AGH_MK" || true
 sed -i 's|+PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome||' "$AGH_MK"
 if grep -q 'INCLUDE_binary:adguardhome' "$AGH_MK"; then

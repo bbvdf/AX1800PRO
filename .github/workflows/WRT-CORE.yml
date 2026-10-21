@@ -197,6 +197,7 @@ jobs:
               echo "DIAG config-package.in adguard lines: $(grep -c adguardhome tmp/.config-package.in 2>/dev/null || echo NA)"
               echo "DIAG scanned makefiles:"; find package -name Makefile 2>/dev/null | grep -i adguard | head -5
               ls -l package/feeds/luci/luci-app-adguardhome 2>&1 | head -3
+              echo "DIAG config-package.in context:"; grep -n -B1 -A4 'config PACKAGE_luci-app-adguardhome$' tmp/.config-package.in | head -12
               echo "DIAG: continuing so the run still produces an image"
             fi
           fi

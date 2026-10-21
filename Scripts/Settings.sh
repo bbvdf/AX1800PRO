@@ -26,6 +26,11 @@ echo "ppe: immortalwrt emortal + nss-firmware added"
 # 让 feeds 重建 package/feeds/luci 的链接与索引，否则 defconfig 不收录该符号
 ./scripts/feeds install -f luci-app-adguardhome >/dev/null 2>&1 || ./scripts/feeds install luci-app-adguardhome
 [ -f ./package/feeds/luci/luci-app-adguardhome/Makefile ] && echo "ppe: luci-app-adguardhome linked into package/feeds/luci" || echo "WARN: luci-app-adguardhome link missing"
+# --- 诊断：确认 kenzok8 的 AGH 前端是否被 prepare 收录（下一轮据此定位）---
+make prepare >/dev/null 2>&1 || true
+echo "DIAG packageinfo: $(grep -c luci-app-adguardhome tmp/.packageinfo 2>/dev/null || echo 0)"
+echo "DIAG index: $(grep -c luci-app-adguardhome feeds/luci.index 2>/dev/null || echo 0)"
+echo "DIAG makefile: $(ls -l ./feeds/luci/applications/luci-app-adguardhome/Makefile 2>/dev/null | wc -l)"
 fi
 
 # 加载全局函数

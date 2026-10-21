@@ -98,6 +98,11 @@ sed -i 's|+ca-certs|+ca-bundle|' "$AGH_MK"
 # kenzok8 的 lua 前端在 luci.mk 下依赖不全（无 luci-base/lua-runtime），依赖不满足时 kconfig 会把整包隐藏
 sed -i 's|^LUCI_DEPENDS:=.*|LUCI_DEPENDS:=+ca-bundle +curl +wget-ssl +luci-base +luci-lua-runtime +luci-compat|' "$AGH_MK"
 grep -m1 '^LUCI_DEPENDS' "$AGH_MK" || true
+grep -q '^LUCI_DEPENDS:=+ca-bundle +curl +wget-ssl +luci-base +luci-lua-runtime +luci-compat$' "$AGH_MK" || {
+	echo "ERROR: LUCI_DEPENDS rewrite did not apply, kenzok8 Makefile layout changed"
+	grep -m1 '^LUCI_DEPENDS' "$AGH_MK"
+	exit 1
+}
 sed -i 's|+PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome||' "$AGH_MK"
 if grep -q 'INCLUDE_binary:adguardhome' "$AGH_MK"; then
 	echo "WARN: INCLUDE_binary dependency still present in $AGH_MK"

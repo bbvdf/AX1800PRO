@@ -125,7 +125,8 @@ CONFIG_PACKAGE_kmod-crypto-sha256=y
 CONFIG_PACKAGE_kmod-crypto-sha512=y
 CONFIG_PACKAGE_kmod-inet-diag=y
 CONFIG_PACKAGE_kmod-netlink-diag=y
-CONFIG_PACKAGE_kmod-nft-fullcone=y
+# ppe-nss 线没有 fullcone：openwrt main 不含 fullconenat-nft（ImmortalWrt 专有移植），此符号会被 defconfig 静默丢弃
+# CONFIG_PACKAGE_kmod-nft-fullcone is not set
 CONFIG_PACKAGE_kmod-nft-bridge=y
 CONFIG_PACKAGE_kmod-tcp-bbr=y
 CONFIG_PACKAGE_kmod-usb3=y

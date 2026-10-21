@@ -247,6 +247,13 @@ jobs:
           cp -f ./.config ./upload/Config-"$WRT_CONFIG"-"$WRT_VER"-"$WRT_DATE".txt
 
           if [[ $WRT_TEST != 'true' ]]; then
+          if [ "$WRT_STACK" = "ppe" ]; then
+            MANI=$(find ./bin/targets/ -type f -name '*.manifest' | head -1)
+            for pkg in luci-app-adguardhome adguardhome qca-ppe-qos luci-app-qca-ppe-qos kmod-nss-wifi-drv nss-firmware-ipq60xx luci-theme-aurora luci-app-daed; do
+              grep -q "^$pkg - " "$MANI" || { echo "ERROR: required package missing from manifest: $pkg"; exit 1; }
+            done
+            echo "OK: required ppe packages present in $MANI"
+          fi
             echo "WRT_KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)" >> $GITHUB_ENV
             echo "WRT_LIST=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV
 

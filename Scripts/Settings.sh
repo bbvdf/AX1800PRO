@@ -26,6 +26,9 @@ echo "ppe: immortalwrt emortal + nss-firmware added"
 # 让 feeds 重建 package/feeds/luci 的链接与索引，否则 defconfig 不收录该符号
 ./scripts/feeds install -f luci-app-adguardhome >/dev/null 2>&1 || ./scripts/feeds install luci-app-adguardhome
 [ -f ./package/feeds/luci/luci-app-adguardhome/Makefile ] && echo "ppe: luci-app-adguardhome linked into package/feeds/luci" || echo "WARN: luci-app-adguardhome link missing"
+# 扫描缓存可能被 CI cache 恢复，时间戳不更新 -> prepare 不会重扫，新包永远进不了 .packageinfo
+rm -f tmp/.packageinfo tmp/.config-package.in tmp/.packagedeps tmp/.packageauxvars
+echo "ppe: dropped stale tmp/.packageinfo so adguardhome gets rescanned"
 fi
 
 # 加载全局函数

@@ -185,7 +185,19 @@ jobs:
           
           $GITHUB_WORKSPACE/Scripts/Settings.sh
 
-          make defconfig -j$(nproc) && make clean -j$(nproc)
+          make defconfig -j$(nproc)
+          if [ "$WRT_STACK" = "ppe" ]; then
+            if grep -qx 'CONFIG_PACKAGE_luci-app-adguardhome=y' .config; then
+              echo "OK: luci-app-adguardhome accepted by defconfig"
+            else
+              echo "DIAG: luci-app-adguardhome was dropped by defconfig"
+              n=$(grep -c luci-app-adguardhome tmp/.packageinfo 2>/dev/null) || true
+              echo "DIAG packageinfo matches: ${n:-0}"
+              ls -l package/feeds/luci/luci-app-adguardhome 2>&1 | head -3
+              exit 1
+            fi
+          fi
+          make clean -j$(nproc)
 
       - name: Download Packages
         if: env.WRT_TEST != 'true'

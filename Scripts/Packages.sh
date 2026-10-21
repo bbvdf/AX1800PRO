@@ -90,6 +90,18 @@ mv ./luci-app-adguardhome ../feeds/luci/applications/ || { echo "ERROR: move luc
 # feeds install 建的链接可能因目录被删而失效，重建
 rm -rf ./feeds/luci/luci-app-adguardhome
 ln -sfn ../../../feeds/luci/applications/luci-app-adguardhome ./feeds/luci/luci-app-adguardhome
+# kenzok8 的 Makefile 引用 PACKAGE_<pkg>_INCLUDE_binary 这个 Kconfig 选项，但 luci.mk 不生成它
+# → kconfig 判定依赖不可满足，整包被静默丢弃（.config 里连 not set 都没有）。去掉该依赖。
+AGH_MK=../feeds/luci/applications/luci-app-adguardhome/Makefile
+# 依赖 +ca-certs 在 openwrt main 不存在（只有 ca-bundle），kconfig 因此判定不可满足而丢弃整包
+sed -i 's|+ca-certs|+ca-bundle|' "$AGH_MK"
+grep -m1 '^LUCI_DEPENDS' "$AGH_MK" || true
+sed -i 's|+PACKAGE_$(PKG_NAME)_INCLUDE_binary:adguardhome||' "$AGH_MK"
+if grep -q 'INCLUDE_binary:adguardhome' "$AGH_MK"; then
+	echo "WARN: INCLUDE_binary dependency still present in $AGH_MK"
+else
+	echo "adguardhome Makefile: INCLUDE_binary dependency removed"
+fi
 echo "luci-app-adguardhome: $(grep -m1 '^PKG_RELEASE' ../feeds/luci/applications/luci-app-adguardhome/Makefile)"
 #UPDATE_PACKAGE "luci-app-adguardhome" "kenzok8/openwrt-packages" "master" "pkg"
 #UPDATE_PACKAGE "luci-app-adguardhome" "MomoFlora/luci-app-adguardhome" "main"

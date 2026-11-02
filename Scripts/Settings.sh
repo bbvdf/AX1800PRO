@@ -21,7 +21,18 @@ rm -rf .mwrt
 git clone --depth 1 -b edma-nss https://github.com/JuliusBairaktaris/nss-packages.git .nsspkg || { echo "ERROR: clone nss-packages failed"; exit 1; }
 cp -R .nsspkg/nss-firmware ./package/ || exit 1
 rm -rf .nsspkg
-echo "ppe: immortalwrt emortal + nss-firmware added" 
+echo "ppe: immortalwrt emortal + nss-firmware added"
+
+# hw_ppe.qos：stock feeds/packages 的 sqm-scripts 不带 PPE 硬件整形脚本（上游 README：
+# "hw_ppe.qos needs sqm-scripts from the builder's feed patch，stock feeds defconfig 会丢"）。
+# 从 Julius 的 hw-ppe-offload 分支整包覆盖到 package/，靠 scan.awk 的 OVERRIDELIST 压过 feeds 同名包
+git clone --depth 1 -b hw-ppe-offload https://github.com/JuliusBairaktaris/sqm-scripts.git .sqmppe || { echo "ERROR: clone sqm-scripts failed"; exit 1; }
+rm -rf .sqmppe/.git
+rm -rf ./package/sqm-scripts ./package/feeds/*/sqm-scripts
+mv .sqmppe ./package/sqm-scripts || exit 1
+[ -f ./package/sqm-scripts/Makefile ] || { echo "ERROR: sqm-scripts Makefile missing"; exit 1; }
+[ -f ./package/sqm-scripts/src/hw_ppe.qos ] || { echo "ERROR: hw_ppe.qos missing from sqm-scripts clone"; exit 1; }
+echo "ppe: sqm-scripts replaced with hw-ppe-offload ($(grep -m1 '^PKG_RELEASE' ./package/sqm-scripts/Makefile), hw_ppe.qos present)"
 # kenzok8 的 AGH 前端已被 Packages.sh 移入 feeds/luci/applications/，这里重新 install 一次
 # 让 feeds 重建 package/feeds/luci 的链接与索引，否则 defconfig 不收录该符号
 ./scripts/feeds install -f luci-app-adguardhome >/dev/null 2>&1 || ./scripts/feeds install luci-app-adguardhome

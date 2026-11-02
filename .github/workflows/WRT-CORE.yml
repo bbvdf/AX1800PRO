@@ -201,6 +201,17 @@ jobs:
               echo "DIAG: continuing so the run still produces an image"
             fi
           fi
+          if [ "$WRT_STACK" = "ppe" ]; then
+            for sym in CONFIG_ATH11K_NSS_WIFI CONFIG_PACKAGE_devlink CONFIG_PACKAGE_ethtool-full \
+                       CONFIG_PACKAGE_kmod-sched-act-vlan CONFIG_PACKAGE_kmod-sched-red CONFIG_PACKAGE_kmod-sched-gred; do
+              if grep -qx "$sym=y" .config; then
+                echo "OK: $sym accepted by defconfig"
+              else
+                echo "ERROR: $sym dropped by defconfig (feeds or dependencies)"; exit 1
+              fi
+            done
+            ls -l package/sqm-scripts/src/hw_ppe.qos || { echo "ERROR: hw_ppe.qos not staged"; exit 1; }
+          fi
           make clean -j$(nproc)
 
       - name: Download Packages

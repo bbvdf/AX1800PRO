@@ -23,16 +23,14 @@ cp -R .nsspkg/nss-firmware ./package/ || exit 1
 rm -rf .nsspkg
 echo "ppe: immortalwrt emortal + nss-firmware added"
 
-# hw_ppe.qos：stock feeds/packages 的 sqm-scripts 不带 PPE 硬件整形脚本（上游 README：
-# "hw_ppe.qos needs sqm-scripts from the builder's feed patch，stock feeds defconfig 会丢"）。
-# 从 Julius 的 hw-ppe-offload 分支整包覆盖到 package/，靠 scan.awk 的 OVERRIDELIST 压过 feeds 同名包
-git clone --depth 1 -b hw-ppe-offload https://github.com/JuliusBairaktaris/sqm-scripts.git .sqmppe || { echo "ERROR: clone sqm-scripts failed"; exit 1; }
-rm -rf .sqmppe/.git
+# hw_ppe.qos：stock feeds/packages 的 sqm-scripts 拉的是 tohojo 源码，没有 PPE 硬件整形脚本。
+# 这里用一份只换源码的 OpenWrt 包定义覆盖它（包名/依赖/install 规则与 stock 相同，
+# 源码指向 JuliusBairaktaris@hw-ppe-offload，因此 /usr/lib/sqm/hw_ppe.qos 会被编进包里）。
 rm -rf ./package/sqm-scripts ./package/feeds/*/sqm-scripts
-mv .sqmppe ./package/sqm-scripts || exit 1
-[ -f ./package/sqm-scripts/Makefile ] || { echo "ERROR: sqm-scripts Makefile missing"; exit 1; }
-[ -f ./package/sqm-scripts/src/hw_ppe.qos ] || { echo "ERROR: hw_ppe.qos missing from sqm-scripts clone"; exit 1; }
-echo "ppe: sqm-scripts replaced with hw-ppe-offload ($(grep -m1 '^PKG_RELEASE' ./package/sqm-scripts/Makefile), hw_ppe.qos present)"
+mkdir -p ./package/sqm-scripts
+cp "$GITHUB_WORKSPACE/Scripts/files/sqm-scripts/Makefile" ./package/sqm-scripts/Makefile || exit 1
+grep -q 'JuliusBairaktaris/sqm-scripts' ./package/sqm-scripts/Makefile || { echo "ERROR: sqm-scripts Makefile not from hw-ppe-offload"; exit 1; }
+echo "ppe: sqm-scripts packaged from hw-ppe-offload (hw_ppe.qos ships in the package)"
 # kenzok8 的 AGH 前端已被 Packages.sh 移入 feeds/luci/applications/，这里重新 install 一次
 # 让 feeds 重建 package/feeds/luci 的链接与索引，否则 defconfig 不收录该符号
 ./scripts/feeds install -f luci-app-adguardhome >/dev/null 2>&1 || ./scripts/feeds install luci-app-adguardhome

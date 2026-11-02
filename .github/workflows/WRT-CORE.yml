@@ -210,7 +210,8 @@ jobs:
                 echo "ERROR: $sym dropped by defconfig (feeds or dependencies)"; exit 1
               fi
             done
-            ls -l package/sqm-scripts/src/hw_ppe.qos || { echo "ERROR: hw_ppe.qos not staged"; exit 1; }
+            ls -l package/sqm-scripts/Makefile || { echo "ERROR: sqm-scripts override missing"; exit 1; }
+            grep -q 'JuliusBairaktaris/sqm-scripts' package/sqm-scripts/Makefile || { echo "ERROR: sqm-scripts not from hw-ppe-offload"; exit 1; }
           fi
           make clean -j$(nproc)
 
@@ -264,6 +265,8 @@ jobs:
               grep -q "^$pkg - " "$MANI" || { echo "ERROR: required package missing from manifest: $pkg"; exit 1; }
             done
             echo "OK: required ppe packages present in $MANI"
+            ls -l ./build_dir/target-*/root-qualcommax/usr/lib/sqm/hw_ppe.qos || { echo "ERROR: hw_ppe.qos not in the staged rootfs"; exit 1; }
+            echo "OK: hw_ppe.qos staged into the image"
           fi
             echo "WRT_KVER=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^kernel - \K[\d\.]+' {} \;)" >> $GITHUB_ENV
             echo "WRT_LIST=$(find ./bin/targets/ -type f -name "*.manifest" -exec grep -oP '^luci-(app|theme)[^ ]*' {} \; | tr '\n' ' ')" >> $GITHUB_ENV

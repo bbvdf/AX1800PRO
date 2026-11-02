@@ -194,8 +194,12 @@ cat > files/etc/uci-defaults/99-custom-settings <<EOF
 # 1. 替换软件源 (针对新版 ImmortalWrt 的 apk 包管理器)
 if [ -d "/etc/apk/repositories.d" ]; then
     sed -i 's/downloads.immortalwrt.org/mirrors.pku.edu.cn\/immortalwrt/g' /etc/apk/repositories.d/*.list
-    # ppe-nss 是 OpenWrt 源，同样走 pku 镜像
-    sed -i 's/downloads.openwrt.org/mirrors.pku.edu.cn\/openwrt/g' /etc/apk/repositories.d/*.list
+    # ppe-nss 是 OpenWrt 源：pku 镜像没有 /openwrt/snapshots 路径（全 404，apk update 直接失败），
+    # 中科大同步了 snapshots（实测 10172 个包可用）
+    sed -i 's/downloads.openwrt.org/mirrors.ustc.edu.cn\/openwrt/g' /etc/apk/repositories.d/*.list
+    # Julius 的两个 fork feed 不在任何公共镜像里，留着只会让每次 apk update 报 wget error 8；
+    # 它们提供的包已经编进镜像（qca-ppe-qos / luci-app-qca-ppe-qos / sqm-scripts）
+    sed -i '/^[^#].*\/luci_ppe_qos\//s/^/# /; /^[^#].*\/sqm_scripts_ppe\//s/^/# /' /etc/apk/repositories.d/*.list
 fi
 
 # 2. 配置 WAN 口 PPPoE
